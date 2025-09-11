@@ -2,17 +2,14 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
-import { UsersService } from '../../users/services';
 import { JwtPayload } from './jwt.payload';
-import { I18nService } from 'nestjs-i18n';
-import { I18nTranslations } from 'src/generated/i18n.generated';
+import { ManagerUsersService } from 'src/modules/users/services/manager.users.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private readonly configService: ConfigService,
-    private readonly userService: UsersService,
-    private readonly i18n: I18nService<I18nTranslations>,
+    private readonly managerUsersService: ManagerUsersService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -22,10 +19,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    const user = await this.userService.findOne(payload.phone_number);
-    if (!user) {
+    try {
+      const result = await this.managerUsersService.findOneByUsername(payload.username);
+      return result.data; // The returned user object is attached to the request object
+    } catch (error) {
       throw new UnauthorizedException();
     }
-    return user; // The returned user object is attached to the request object
   }
 }

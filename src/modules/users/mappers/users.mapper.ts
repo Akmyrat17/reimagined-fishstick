@@ -1,4 +1,4 @@
-import { CreateUserDto } from '../dtos';
+import { CreateUserDto } from '../dtos/create-user.dto';
 import { UsersEntity } from '../entities/user.entity';
 
 export class UsersMapper {
@@ -12,5 +12,5 @@ export class UsersMapper {
     return user;
   }
 
-  async responseUser(usersEntity: UsersEntity) {}
+  async responseUser(usersEntity: UsersEntity) { }
 }

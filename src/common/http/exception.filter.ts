@@ -8,14 +8,11 @@ import { HttpAdapterHost } from '@nestjs/core';
 import { EntityNotFoundError, QueryFailedError, TypeORMError } from 'typeorm';
 import { DbErrorType } from '../enums';
 import { AuthErrorTypeEnum } from '../enums/auth-error-type.enum';
-import { I18nContext, I18nService } from 'nestjs-i18n';
-import { I18nTranslations } from 'src/generated/i18n.generated';
 
 @Catch(HttpException, QueryFailedError, EntityNotFoundError, TypeORMError)
 export class HttpExceptionFilter implements ExceptionFilter {
-  constructor(protected readonly httpAdapterHost: HttpAdapterHost) {}
+  constructor(protected readonly httpAdapterHost: HttpAdapterHost) { }
   catch(exception: any, host: ArgumentsHost) {
-    const i18n = I18nContext.current<I18nTranslations>(host);
     const ctx = host.switchToHttp();
     const response = ctx.getResponse();
     const request = ctx.getRequest();
@@ -97,7 +94,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
             method: request.method,
             path: request.url,
             time: new Date().getTime(),
-            message: i18n.t('auth.user_not_found'),
           },
           401,
         );

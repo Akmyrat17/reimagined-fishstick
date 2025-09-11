@@ -1,29 +1,26 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { APP_FILTER } from '@nestjs/core';
-import { HttpExceptionFilter } from './common/http/exception.filter';
 import { LoggingMiddleware } from './common/middlewares/logging-middleware';
 import { AllModule } from './modules/all.module';
-import { ConfigModule } from '@nestjs/config';
-import { DataBaseModule } from './database/database.module';
-import { HeaderResolver, I18nModule } from 'nestjs-i18n';
-import * as path from 'path';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import typeormConfig from './config/typeorm';
 
 @Module({
   imports: [
-    DataBaseModule,
-    AllModule,
-    ConfigModule.forRoot({ isGlobal: true }),
-    I18nModule.forRoot({
-      fallbackLanguage: 'en',
-      loaderOptions: {
-        path: path.join(__dirname, '/i18n'),
-        watch: true,
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => {
+        const config = configService.get('typeorm')
+        if (!config) {
+          throw new Error('TypeORM config not found')
+        }
+        return config
       },
-      resolvers: [new HeaderResolver(['lang'])],
-      typesOutputPath: path.join(
-        __dirname,
-        '../src/generated/i18n.generated.ts',
-      ),
+    }),
+    AllModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [typeormConfig]
     }),
   ],
 })

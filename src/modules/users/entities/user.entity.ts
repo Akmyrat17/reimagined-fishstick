@@ -1,6 +1,7 @@
 import { RolesEnum } from 'src/common/enums';
 import { BaseEntity } from 'src/database/enitities/base.entity';
 import { Column, Entity } from 'typeorm';
+import { Exclude } from 'class-transformer';
 
 @Entity({ name: 'users' })
 export class UsersEntity extends BaseEntity {
@@ -8,6 +9,7 @@ export class UsersEntity extends BaseEntity {
   username: string;
 
   @Column()
+  @Exclude()
   password: string;
 
   @Column({

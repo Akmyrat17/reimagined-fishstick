@@ -2,36 +2,52 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { LoginDto } from './dtos/login.dto';
 import { SignUpDto } from './dtos/sign-up.dto';
 import { JwtService } from '@nestjs/jwt';
-import { UsersService } from '../users/services';
-import { I18nService } from 'nestjs-i18n';
 import { JwtPayload } from './jwt/jwt.payload';
+import * as bcrypt from 'bcrypt';
+import { RolesEnum } from 'src/common/enums';
+import { ManagerUsersService } from '../users/services/manager.users.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private jwtService: JwtService,
-    private usersService: UsersService,
-    private i18n: I18nService,
-  ) {}
+    private managerUsersService: ManagerUsersService,
+  ) { }
   async login(loginDto: LoginDto) {
-    const { phone_number } = loginDto;
-    const user = await this.usersService.findOne(phone_number);
-    if (!user) {
-      throw new UnauthorizedException(this.i18n.t('auth.user_not_found'));
+    const { username, password } = loginDto;
+    try {
+      const result = await this.managerUsersService.findOneByUsername(username);
+      const user = result.data;
+
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        throw new UnauthorizedException('auth.password_not_match');
+      }
+
+      const payload: JwtPayload = {
+        id: user.id,
+        username: user.username,
+        phone_number: user.phone_number,
+      };
+      return { access_token: await this.jwtService.signAsync(payload) };
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException('auth.user_not_found');
     }
-    const payload: JwtPayload = {
-      id: user.id,
-      username: user.username,
-      phone_number: user.phone_number,
-    };
-    return { access_token: await this.jwtService.signAsync(payload) };
   }
+
   async signUp(signUpDto: SignUpDto) {
-    const user = await this.usersService.create(signUpDto);
+    const result = await this.managerUsersService.create({
+      ...signUpDto,
+      role: RolesEnum.USER,
+    });
+
     const payload: JwtPayload = {
-      id: user.id,
-      username: user.username,
-      phone_number: user.phone_number,
+      id: result.data.id,
+      username: result.data.username,
+      phone_number: result.data.phone_number,
     };
     return { access_token: await this.jwtService.signAsync(payload) };
   }
