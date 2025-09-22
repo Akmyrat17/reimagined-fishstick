@@ -1,11 +1,14 @@
-import { RolesEnum } from 'src/common/enums';
-import { BaseEntity } from 'src/database/enitities/base.entity';
-import { Column, Entity } from 'typeorm';
+import { RolesEnum } from '../../../common/enums';
+import { BaseEntity } from '../../../database/enitities/base.entity';
+import { Column, Entity, Unique } from 'typeorm';
 import { Exclude } from 'class-transformer';
 
 @Entity({ name: 'users' })
 export class UsersEntity extends BaseEntity {
-  @Column()
+  @Column({
+    unique: true,
+    nullable: false,
+  })
   username: string;
 
   @Column()

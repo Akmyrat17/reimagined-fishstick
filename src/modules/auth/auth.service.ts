@@ -15,27 +15,20 @@ export class AuthService {
   ) { }
   async login(loginDto: LoginDto) {
     const { username, password } = loginDto;
-    try {
-      const result = await this.managerUsersService.findOneByUsername(username);
-      const user = result.data;
+    const result = await this.managerUsersService.findOneByUsername(username);
+    const user = result.data;
 
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        throw new UnauthorizedException('auth.password_not_match');
-      }
-
-      const payload: JwtPayload = {
-        id: user.id,
-        username: user.username,
-        phone_number: user.phone_number,
-      };
-      return { access_token: await this.jwtService.signAsync(payload) };
-    } catch (error) {
-      if (error instanceof UnauthorizedException) {
-        throw error;
-      }
-      throw new UnauthorizedException('auth.user_not_found');
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      throw new UnauthorizedException('auth.password_not_match');
     }
+    const payload: JwtPayload = {
+      id: user.id,
+      username: user.username,
+      phone_number: user.phone_number,
+    };
+    return { access_token: await this.jwtService.signAsync(payload) };
+
   }
 
   async signUp(signUpDto: SignUpDto) {

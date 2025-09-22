@@ -13,16 +13,16 @@ export class ManagerUsersService {
   async create(createUserDto: CreateUserDto) {
     try {
       // Check if username already exists
-      const existingUser = await this.managerUsersRepository.findOne({ 
-        where: { username: createUserDto.username } 
+      const existingUser = await this.managerUsersRepository.findOne({
+        where: { username: createUserDto.username }
       });
       if (existingUser) {
         throw new ConflictException(`Username '${createUserDto.username}' already exists`);
       }
 
       // Check if phone number already exists
-      const existingPhone = await this.managerUsersRepository.findOne({ 
-        where: { phone_number: createUserDto.phone_number } 
+      const existingPhone = await this.managerUsersRepository.findOne({
+        where: { phone_number: createUserDto.phone_number }
       });
       if (existingPhone) {
         throw new ConflictException(`Phone number '${createUserDto.phone_number}' already exists`);
@@ -35,7 +35,7 @@ export class ManagerUsersService {
         password: hashedPassword,
         role: createUserDto.role || RolesEnum.USER,
       });
-      
+
       const savedUser = await user.save();
       return {
         success: true,
@@ -76,8 +76,8 @@ export class ManagerUsersService {
 
     // Check for conflicts if updating username or phone
     if (updateUserDto.username && updateUserDto.username !== existingUser.username) {
-      const userWithUsername = await this.managerUsersRepository.findOne({ 
-        where: { username: updateUserDto.username } 
+      const userWithUsername = await this.managerUsersRepository.findOne({
+        where: { username: updateUserDto.username }
       });
       if (userWithUsername) {
         throw new ConflictException(`Username '${updateUserDto.username}' already exists`);
@@ -85,8 +85,8 @@ export class ManagerUsersService {
     }
 
     if (updateUserDto.phone_number && updateUserDto.phone_number !== existingUser.phone_number) {
-      const userWithPhone = await this.managerUsersRepository.findOne({ 
-        where: { phone_number: updateUserDto.phone_number } 
+      const userWithPhone = await this.managerUsersRepository.findOne({
+        where: { phone_number: updateUserDto.phone_number }
       });
       if (userWithPhone) {
         throw new ConflictException(`Phone number '${updateUserDto.phone_number}' already exists`);
@@ -99,14 +99,14 @@ export class ManagerUsersService {
     }
 
     const result = await this.managerUsersRepository.update(id, updateUserDto);
-    
+
     if (result.affected === 0) {
       throw new BadRequestException(`Failed to update user with ID ${id}`);
     }
 
     // Get updated user
     const updatedUser = await this.managerUsersRepository.findOne({ where: { id } });
-    
+
     return {
       success: true,
       message: `User with ID ${id} updated successfully`,
@@ -123,7 +123,7 @@ export class ManagerUsersService {
 
     // Delete the user
     const result = await this.managerUsersRepository.delete(id);
-    
+
     if (result.affected === 0) {
       throw new NotFoundException(`Failed to delete user with ID ${id}`);
     }

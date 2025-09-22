@@ -120,8 +120,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
           method: request.method,
           path: request.url,
           time: new Date().getTime(),
-          message: exception.response.message
-            ? exception.response.message
+          message: exception.response?.message
+            ? exception.response?.message
             : exception.message,
         },
         400,
