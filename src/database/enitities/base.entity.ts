@@ -11,8 +11,8 @@ export abstract class BaseEntity extends TypeORMBaseEntity {
   id: number;
 
   @CreateDateColumn({ type: 'timestamptz' })
-  createdAt: Date;
+  created_at: Date;
 
   @UpdateDateColumn({ type: 'timestamptz' })
-  updatedAt: Date;
+  updated_at: Date;
 }
