@@ -2,6 +2,7 @@ import { DataSource, Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { PaginationRequestDto } from 'src/common/dto/pagination.request.dto';
 import { QuestionsEntity } from '../entities/questions.entity';
+import { QuestionsQueryDto } from '../dtos/query-questions.dto';
 
 @Injectable()
 export class ManagerQuestionsRepository extends Repository<QuestionsEntity> {
@@ -9,14 +10,16 @@ export class ManagerQuestionsRepository extends Repository<QuestionsEntity> {
         super(QuestionsEntity, dataSource.createEntityManager());
     }
 
-    async findAll(dto: PaginationRequestDto) {
+    async findAll(dto: QuestionsQueryDto) {
         const query = this.createQueryBuilder('questions')
             .leftJoin('questions.asked_by','asked_by')
             .select(['questions.id', 'questions.slug', 'questions.file_path','questions.check_status'])
             .addSelect(['asked_by.id','asked_by.nickname'])
         if (dto.keyword && dto.keyword != '') {
-            query.where(`questions.title LIKE :keyword`, { keyword: `%${dto.keyword}%` })
+            query.where(`questions.title ILIKE :keyword`, { keyword: `%${dto.keyword}%` })
         }
+        if(dto.check_status) query.andWhere("questions.check_status = :value",{value:dto.check_status})
+        if(dto.priority) query.andWhere("questions.priority = :value",{value:dto.priority})
         return await query.take(dto.limit).offset((dto.page - 1) * dto.limit).getManyAndCount()
     }
     async getOne(id: number) {

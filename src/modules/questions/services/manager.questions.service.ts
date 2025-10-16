@@ -11,6 +11,7 @@ import { QuestionsUpdateDto } from '../dtos/update-questions.dto';
 import { PaginationRequestDto } from 'src/common/dto/pagination.request.dto';
 import { PaginationResponse } from 'src/common/dto/pagination.response.dto';
 import { QuestionsResponseDto } from '../dtos/response-questions.dto';
+import { QuestionsQueryDto } from '../dtos/query-questions.dto';
 
 @Injectable()
 export class ManagerQuestionsService {
@@ -51,7 +52,7 @@ export class ManagerQuestionsService {
     return await this.managerQuestionsRepository.save(mapped);
   }
 
-  async getAll(dto: PaginationRequestDto) {
+  async getAll(dto: QuestionsQueryDto) {
     const [entities, total] =
       await this.managerQuestionsRepository.findAll(dto);
     const mapped = entities.map((entity) => ManagerQuestionsMapper.toResponseSimple(entity))

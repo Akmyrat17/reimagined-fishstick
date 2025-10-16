@@ -20,6 +20,7 @@ import { AdminGuard } from 'src/common/guards/admin.guard';
 import { ManagerAnswersService } from '../services/manager.answers.service';
 import { AnswersCreateDto } from '../dtos/create-answers.dto';
 import { AnswersUpdateDto } from '../dtos/update-answers.dto';
+import { AnswersQueryDto } from '../dtos/query-answers.dto';
 
 @UseGuards(JwtAuthGuard, AdminGuard)
 @Controller({ path: 'manager/answers' })
@@ -33,7 +34,7 @@ export class ManagerAnswersController {
     }
 
     @Get()
-    async findAll(@Query() paginationQuery: PaginationRequestDto) {
+    async findAll(@Query() paginationQuery: AnswersQueryDto) {
         return this.managerAnswersService.getAll(paginationQuery);
     }
 

@@ -22,6 +22,7 @@ import { HeaderDTO } from 'src/common/dto/header.dto';
 import { ManagerQuestionsService } from '../services/manager.questions.service';
 import { QuestionsCreateDto } from '../dtos/create-questions.dto';
 import { QuestionsUpdateDto } from '../dtos/update-questions.dto';
+import { QuestionsQueryDto } from '../dtos/query-questions.dto';
 
 @UseGuards(JwtAuthGuard, AdminGuard)
 @Controller({ path: 'manager/questions' })
@@ -35,7 +36,7 @@ export class ManagerQuestionsController {
     }
 
     @Get()
-    async findAll(@Query() paginationQuery: PaginationRequestDto) {
+    async findAll(@Query() paginationQuery: QuestionsQueryDto) {
         return this.managerQuestionsService.getAll(paginationQuery);
     }
 

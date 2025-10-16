@@ -10,6 +10,7 @@ import { AnswersEntity } from '../entites/answers.entity';
 import { ManagerAnswersMapper } from '../mappers/manager.answers.mapper';
 import { AnswersUpdateDto } from '../dtos/update-answers.dto';
 import { AnswersResponseDto } from '../dtos/response-answers.dto';
+import { AnswersQueryDto } from '../dtos/query-answers.dto';
 
 @Injectable()
 export class ManagerAnswersService {
@@ -41,7 +42,7 @@ export class ManagerAnswersService {
     return await this.managerAnswersRepository.save(mapped);
   }
 
-  async getAll(dto: PaginationRequestDto) {
+  async getAll(dto: AnswersQueryDto) {
     const [entities, total] =
       await this.managerAnswersRepository.findAll(dto);
     const mapped = entities.map((entity) =>ManagerAnswersMapper.toResponseSimple(entity))

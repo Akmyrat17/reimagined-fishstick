@@ -1,6 +1,5 @@
 import {
   BaseEntity as TypeORMBaseEntity,
-  Column,
   CreateDateColumn,
   UpdateDateColumn,
   PrimaryGeneratedColumn,
