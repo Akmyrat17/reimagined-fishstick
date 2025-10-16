@@ -1,5 +1,6 @@
 import { IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 import { QuestionsPriorityEnum } from 'src/common/enums';
+import { CheckStatusEnum } from 'src/common/enums/check-status.enum';
 
 export class QuestionsUpdateDto {
   @IsOptional()
@@ -15,8 +16,8 @@ export class QuestionsUpdateDto {
   asked_by_id: number;
 
     @IsOptional()
-    @IsBoolean()
-    is_approved:boolean
+    @IsEnum(CheckStatusEnum)
+    check_status:CheckStatusEnum
   
   @IsOptional()
   @IsEnum(QuestionsPriorityEnum)

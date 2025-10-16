@@ -10,8 +10,8 @@ export class ManagerQuestionsMapper {
         entity.content=dto.content
         entity.title = dto.title
         entity.slug = slug
-        if(dto.is_approved) entity.is_approved = dto.is_approved
         entity.file_path = filePath
+        entity.check_status = dto.check_status
         entity.asked_by = new UsersEntity({id:dto.asked_by_id})
         if(dto.priority) entity.priority  = dto.priority
         return entity
@@ -24,7 +24,7 @@ export class ManagerQuestionsMapper {
             entity.title = dto.title
             entity.slug = slug
         }
-        if(dto.is_approved) entity.is_approved = dto.is_approved
+        if(dto.check_status) entity.check_status = dto.check_status
         if(filePath) entity.file_path = filePath
         if(dto.asked_by_id) entity.asked_by = new UsersEntity({id:dto.asked_by_id})
         if(dto.priority) entity.priority  = dto.priority
@@ -36,7 +36,7 @@ export class ManagerQuestionsMapper {
         dto.file_path = entity.file_path
         dto.priority = entity.priority
         dto.slug = entity.slug
-        dto.is_approved = entity.is_approved
+        dto.check_status = entity.check_status
         dto.title = entity.title
         dto.asked_by = entity.asked_by
         return dto
@@ -47,7 +47,7 @@ export class ManagerQuestionsMapper {
         dto.file_path = entity.file_path
         dto.priority = entity.priority
         dto.slug = entity.slug
-        dto.is_approved = entity.is_approved
+        dto.check_status = entity.check_status
         dto.title = entity.title
         dto.content= entity.content
         dto.asked_by = entity.asked_by

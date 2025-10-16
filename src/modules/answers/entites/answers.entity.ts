@@ -1,3 +1,4 @@
+import { CheckStatusEnum } from "src/common/enums/check-status.enum";
 import { BaseEntity } from "src/database/enitities/base.entity";
 import { QuestionsEntity } from "src/modules/questions/entities/questions.entity";
 import { UsersEntity } from "src/modules/users/entities/user.entity";
@@ -11,9 +12,9 @@ export class AnswersEntity extends BaseEntity {
     @Column({ type: 'text', nullable: true })
     file_path: string;
 
-    @Column({ type: "boolean", nullable: false, default: false })
-    is_approved: boolean
-
+    @Column({ type: "enum", nullable: false,default:CheckStatusEnum.NOT_CHECKED })
+    check_status:CheckStatusEnum
+    
     @ManyToOne(() => QuestionsEntity, (event) => event.id)
     @JoinColumn({ name: 'answered_to' })
     answered_to: QuestionsEntity

@@ -13,7 +13,7 @@ export class ManagerAnswersMapper {
         entity.answered_to = new QuestionsEntity({ id: dto.answered_to_id })
         entity.content = dto.content
         entity.file_path = filePath
-        entity.is_approved = dto.is_approved
+        entity.check_status = dto.check_status
         return entity
     }
     public static toUpdate(dto: AnswersUpdateDto, id: number, filePath: string) {
@@ -22,7 +22,7 @@ export class ManagerAnswersMapper {
         if (dto.answered_to_id) entity.answered_to = new QuestionsEntity({ id: dto.answered_to_id })
         if (dto.content) entity.content = dto.content
         if (filePath) entity.file_path = filePath
-        if (dto.is_approved) entity.is_approved = dto.is_approved
+        if (dto.check_status) entity.check_status = dto.check_status
         return entity
     }
 
@@ -32,6 +32,7 @@ export class ManagerAnswersMapper {
         dto.answered_by = entity.answered_by
         dto.answered_to = QuestionsMapper.toResponseSimple(entity.answered_to)
         dto.content = entity.content
+        dto.check_status = entity.check_status
         dto.file_path = entity.file_path
         return dto
     }
@@ -42,6 +43,7 @@ export class ManagerAnswersMapper {
         dto.answered_by = entity.answered_by
         dto.answered_to = QuestionsMapper.toResponseDetail(entity.answered_to)
         dto.content = entity.content
+        dto.check_status = entity.check_status
         dto.file_path = entity.file_path
         return dto
     }

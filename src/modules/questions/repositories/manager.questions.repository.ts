@@ -12,7 +12,7 @@ export class ManagerQuestionsRepository extends Repository<QuestionsEntity> {
     async findAll(dto: PaginationRequestDto) {
         const query = this.createQueryBuilder('questions')
             .leftJoin('questions.asked_by','asked_by')
-            .select(['questions.id', 'questions.slug', 'questions.file_path','questions.is_approved'])
+            .select(['questions.id', 'questions.slug', 'questions.file_path','questions.check_status'])
             .addSelect(['asked_by.id','asked_by.nickname'])
         if (dto.keyword && dto.keyword != '') {
             query.where(`questions.title LIKE :keyword`, { keyword: `%${dto.keyword}%` })
@@ -22,7 +22,7 @@ export class ManagerQuestionsRepository extends Repository<QuestionsEntity> {
     async getOne(id: number) {
         return await this.createQueryBuilder('questions')
         .leftJoin('questions.asked_by','asked_by')
-        .select(['questions.id','questions.slug','questions.priority','questions.file_path','questions.is_approved','questions.title','questions.content'])
+        .select(['questions.id','questions.slug','questions.priority','questions.file_path','questions.check_status','questions.title','questions.content'])
         .addSelect(['asked_by.id','asked_by.fullname','asked_by.nickname','asked_by.role'])
         .where('questions.id  = :id',{id})
         .getOne()

@@ -1,3 +1,4 @@
+import { CheckStatusEnum } from "src/common/enums/check-status.enum"
 import { QuestionsResponseDto } from "src/modules/questions/dtos/response-questions.dto"
 import { UsersEntity } from "src/modules/users/entities/user.entity"
 
@@ -7,4 +8,5 @@ export class AnswersResponseDto {
     file_path:string
     answered_to:QuestionsResponseDto
     answered_by:UsersEntity
+    check_status:CheckStatusEnum
 }

@@ -13,7 +13,6 @@ export class AnswersMapper {
         entity.answered_to = new QuestionsEntity({ id: dto.answered_to_id })
         entity.content = dto.content
         entity.file_path = filePath
-        entity.is_approved = dto.is_approved
         return entity
     }
     public static toUpdate(dto: AnswersUpdateDto, id: number, filePath: string) {
