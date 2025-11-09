@@ -18,15 +18,10 @@ export class ManagerUsersRepository extends Repository<UsersEntity> {
   async findAll(paginationDto: PaginationRequestDto) {
     const { page, limit, keyword } = paginationDto;
     const skip = (page - 1) * limit;
-    
     const queryBuilder = this.createQueryBuilder('users')
       .skip(skip)
       .take(limit);
-    
-    if (keyword) {
-      queryBuilder.where('users.username ILIKE :keyword', { keyword: `%${keyword}%` });
-    }
-    
+    if (keyword) queryBuilder.where('users.username ILIKE :keyword', { keyword: `%${keyword}%` });
     return await queryBuilder.getManyAndCount();
   }
 }

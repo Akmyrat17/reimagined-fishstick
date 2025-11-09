@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { LoginDto } from './dtos/login.dto';
 import { SignUpDto } from './dtos/sign-up.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -8,6 +8,12 @@ import { RolesEnum } from 'src/common/enums';
 import { ManagerUsersService } from '../users/services/manager.users.service';
 import { ConfigService } from '@nestjs/config';
 import { UsersEntity } from '../users/entities/user.entity';
+import { CreateUserDto } from '../users/dtos/create-user.dto';
+import { UsersRepository } from '../users/repositories/users.repository';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { GmailHelper } from 'src/common/utils/gmail.helper';
+import { Inject } from '@nestjs/common';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AuthService {
@@ -16,64 +22,77 @@ export class AuthService {
   private readonly refreshTokenSecret: string
   private readonly refreshTokenTtl: string
 
+  private readonly appUrl: string
   constructor(
     private jwtService: JwtService,
     private managerUsersService: ManagerUsersService,
     private configService: ConfigService,
+    private usersRepository:UsersRepository,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {
     this.accesTokenSecret = configService.get<string>('ACCESS_TOKEN_SECRET')
     this.accesTokenTtl = configService.get<string>('ACCESS_TOKEN_TTL')
     this.refreshTokenSecret = configService.get<string>('REFRESH_TOKEN_SECRET')
     this.refreshTokenTtl = configService.get<string>('REFRESH_TOKEN_TTL')
+    this.appUrl = configService.get<string>('APP_URL')
   }
   async login(loginDto: LoginDto) {
-    const { username, password } = loginDto;
+    const { email, password } = loginDto;
     try {
-      const result = await this.managerUsersService.findOneByUsername(username);
-      const user = result.data;
+      const result = await this.usersRepository.getUserByEmail(email);
+      const isMatch = await bcrypt.compare(password, result.password);
+      if (!isMatch) throw new UnauthorizedException('auth.password_not_match');
+      const tokens = await this.generateTokens(result)
+      return {tokens,result}
+    } catch (error) {    throw new UnauthorizedException(error.message || error.details)}
+  }
 
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        throw new UnauthorizedException('auth.password_not_match');
-      }
-      return await this.generateTokens(user)
-    } catch (error) {
-      if (error instanceof UnauthorizedException) {
-        throw error;
-      }
-      throw new UnauthorizedException('auth.user_not_found');
+    async signUp(signUpDto: SignUpDto) {
+      const user = await this.usersRepository.getUserByEmail(signUpDto.email)
+      if(user) throw new BadRequestException('User with this email already exists')
+      const hashedPassword = await bcrypt.hash(signUpDto.password, 10)
+      const newUser = new UsersEntity({
+        fullname:signUpDto.fullname,
+        email:signUpDto.email,
+        password:hashedPassword,
+        role:RolesEnum.USER
+      })
+      const saved = await this.usersRepository.save(newUser)
+      const tokens = await this.generateTokens(saved)
+      await this.sendVerificationToken(saved.email)
+      return {tokens,saved}
     }
-  }
-
-  async signUp(signUpDto: SignUpDto) {
-    const result = await this.managerUsersService.create({
-      ...signUpDto,
-      role: RolesEnum.USER,
-    });
-    return await this.generateTokens(result.data)
-  }
 
   async refreshToken(refreshToken: string) {
     const payload = this.jwtService.decode(refreshToken);
     const user = await this.managerUsersService.findOne(payload.id);
     if (!user) throw new UnauthorizedException('User not found');
-    return await this.generateTokens(user.data);
+    return await this.generateTokens(user);
   }
 
   async generateTokens(user: UsersEntity) {
-    const payload: JwtPayload = {
-      id: user.id,
-      username: user.username,
-      phone_number: user.phone_number,
-    };
-    const accessToken = await this.jwtService.signAsync(payload, {
-      secret: this.accesTokenSecret,
-      expiresIn: this.accesTokenTtl,
-    });
-    const refreshToken = await this.jwtService.signAsync(payload, {
-      secret: this.refreshTokenSecret,
-      expiresIn: this.refreshTokenTtl,
-    });
+    const payload: JwtPayload = { id: user.id, fullname: user.fullname, };
+    const accessToken = await this.jwtService.signAsync(payload, {secret: this.accesTokenSecret,    expiresIn: this.accesTokenTtl});
+    const refreshToken = await this.jwtService.signAsync(payload, { secret: this.refreshTokenSecret,expiresIn: this.refreshTokenTtl,  });
     return { access_token: accessToken, refresh_token: refreshToken };
   }
+
+  async verifyEmail(token:string){
+    const email = await this.cacheManager.get<string>(`verify:${token}`);
+    if(!email) throw new UnauthorizedException('Expired or invalid token')
+    const user = await this.usersRepository.getUserByEmail(email);
+    if(!user) throw new UnauthorizedException('User not found')
+    user.is_verified = true
+    await this.usersRepository.save(user)
+    await this.cacheManager.del(`verify:${token}`)
+    return { message: 'Email verified successfully' };
+  }
+
+  private async sendVerificationToken(email:string){
+    const verificationToken = uuidv4()
+    await this.cacheManager.set(`verify:${verificationToken}`,email, 1000 * 60 * 10);
+    const verificationUrl = `${this.appUrl}/auth/verify-email/${verificationToken}`;
+    await GmailHelper.SendVerificationEmail(email, verificationUrl);
+    return { message: 'Verification email sent. Please check your inbox.' };
+}
 }

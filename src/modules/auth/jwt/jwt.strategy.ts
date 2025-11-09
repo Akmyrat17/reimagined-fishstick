@@ -20,8 +20,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: JwtPayload) {
     try {
-      const result = await this.managerUsersService.findOneByUsername(payload.username);
-      return result.data; // The returned user object is attached to the request object
+      const result = await this.managerUsersService.findOneByFullname(payload.fullname);
+      return result; // The returned user object is attached to the request object
     } catch (error) {
       throw new UnauthorizedException();
     }

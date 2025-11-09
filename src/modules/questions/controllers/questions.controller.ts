@@ -28,7 +28,7 @@ export class QuestionsController {
     @Post()
     @UseGuards(JwtAuthGuard)
     @UseInterceptors(FileInterceptor('image', { storage: multer.memoryStorage() }))
-    async create(@Body() dto:QuestionsCreateDto, @UploadedFile() file?: Express.Multer.File,@CurrentUser('id',ParseIntPipe) userId:number) {
+    async create(@Body() dto:QuestionsCreateDto,@CurrentUser('id',ParseIntPipe) userId:number, @UploadedFile() file?: Express.Multer.File) {
         return this.questionsService.create(dto,userId, file);
     }
 

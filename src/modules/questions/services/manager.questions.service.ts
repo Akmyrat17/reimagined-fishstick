@@ -31,11 +31,7 @@ export class ManagerQuestionsService {
     return await this.managerQuestionsRepository.save(mapped);
   }
 
-  async update(
-    dto: QuestionsUpdateDto,
-    questionId: number,
-    file?: Express.Multer.File,
-  ): Promise<QuestionsEntity> {
+  async update(  dto: QuestionsUpdateDto,questionId: number,file?: Express.Multer.File  ): Promise<QuestionsEntity> {
     const question = await this.managerQuestionsRepository.findOne({
       where: { id: questionId },
     });
