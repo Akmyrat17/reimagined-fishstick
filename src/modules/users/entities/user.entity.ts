@@ -2,17 +2,18 @@ import { RolesEnum } from '../../../common/enums';
 import { BaseEntity } from '../../../database/enitities/base.entity';
 import { Column, Entity, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
 import { Exclude } from 'class-transformer';
-import { PartialType } from '@nestjs/mapped-types';
 import { QuestionsEntity } from 'src/modules/questions/entities/questions.entity';
 import { ProfessionsEntity } from 'src/modules/professions/entities/professions.entity';
+import { ManyToMany, JoinTable } from 'typeorm';
+import { TagsEntity } from 'src/modules/tags/entities/tags.entity';
 
 @Entity({ name: 'users' })
 export class UsersEntity extends BaseEntity {
   @Column({ unique: true, nullable: false })
   fullname: string;
 
-  @Column({ unique: true, nullable: false })
-  nickname: string;
+  // @Column({ unique: true, nullable: false })
+  // nickname: string;
 
   @Column()
   @Exclude()
@@ -24,11 +25,11 @@ export class UsersEntity extends BaseEntity {
   @Column({type:"boolean",default:false})
   is_verified:boolean
 
-  @Column({ nullable: false })
-  location: string;
+  // @Column({ nullable: false })
+  // location: string;
 
-  @Column({ unique: true, type: 'integer', nullable: false })
-  phone_number: number;
+  // @Column({ unique: true, type: 'integer', nullable: false })
+  // phone_number: number;
 
   @Column({ unique: true, type: 'integer', nullable: true })
   age: number;
@@ -43,6 +44,13 @@ export class UsersEntity extends BaseEntity {
   @JoinColumn({ name: "profession_id", referencedColumnName: "id" })
   profession: ProfessionsEntity
 
+  @ManyToMany(() => TagsEntity, (event) => event.users)
+  @JoinTable({
+    name: "user_tags",
+    joinColumn: { name: "user_id", referencedColumnName: "id" },
+    inverseJoinColumn: { name: "tag_id", referencedColumnName: "id" },
+  })
+  tags: TagsEntity[]
   constructor(init?: Partial<UsersEntity>) {
     super()
     Object.assign(this, init)
