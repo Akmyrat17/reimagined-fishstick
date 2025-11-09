@@ -21,36 +21,39 @@ export class QuestionsEntity extends BaseEntity {
     @Column({ type: "text", nullable: false })
     slug: string
 
-    @Column({ type: "enum", nullable: false,default:CheckStatusEnum.NOT_CHECKED })
-    check_status:CheckStatusEnum
+    @Column({ type: 'timestamptz', nullable: true })
+    special: Date
 
-    @Column({ type: "enum", nullable: false, default:QuestionsPriorityEnum.LOW})
+    @Column({ type: "enum", nullable: false, default: CheckStatusEnum.NOT_CHECKED })
+    check_status: CheckStatusEnum
+
+    @Column({ type: "enum", nullable: false, default: QuestionsPriorityEnum.LOW })
     priority: QuestionsPriorityEnum
 
-    @OneToMany(()=>AnswersEntity,(event)=>event.answered_to)
-    answers:AnswersEntity[]
+    @OneToMany(() => AnswersEntity, (event) => event.answered_to)
+    answers: AnswersEntity[]
 
-    @ManyToOne(()=> UsersEntity, (event) => event.id)
-    @JoinColumn({name:'asked_by'})
-    asked_by:UsersEntity
+    @ManyToOne(() => UsersEntity, (event) => event.id)
+    @JoinColumn({ name: 'asked_by' })
+    asked_by: UsersEntity
 
-    @ManyToMany(()=>ClientsEntity,(event)=>event.id,{onDelete:"CASCADE"})
-    recommended:ClientsEntity[]
+    @ManyToMany(() => ClientsEntity, (event) => event.id, { onDelete: "CASCADE" })
+    recommended: ClientsEntity[]
 
-    @ManyToMany(()=> TagsEntity,(event)=>event.id)
+    @ManyToMany(() => TagsEntity, (event) => event.id)
     @JoinTable({
-        name:"question_tags",
-        joinColumn:{
-            name:"question_id",
-            referencedColumnName:"id"
+        name: "question_tags",
+        joinColumn: {
+            name: "question_id",
+            referencedColumnName: "id"
         },
-        inverseJoinColumn:{
-            name:"tag_id",
-            referencedColumnName:"id"
+        inverseJoinColumn: {
+            name: "tag_id",
+            referencedColumnName: "id"
         }
     })
-    tags:TagsEntity[]
-    
+    tags: TagsEntity[]
+
     constructor(init?: Partial<QuestionsEntity>) {
         super();
         Object.assign(this, init);

@@ -19,94 +19,46 @@ export class QuestionsService {
         @InjectQueue('image-queue') private readonly imageQueue: Queue,
     ) { }
 
-    async create(
-        dto: QuestionsCreateDto,
-        userId: number,
-        file?: Express.Multer.File
-    ): Promise<QuestionsEntity> {
-        let filePath: string;
-        const slug = makeSlug(dto.title);
-        if (file) filePath = this.enqueueImage(file);
-        const mapped = QuestionsMapper.toCreate(dto, slug, filePath, userId);
+    async create(dto: QuestionsCreateDto, userId: number): Promise<QuestionsEntity> {
+        const updatedContent = await ImageHelper.processImagesFromContent(dto.content);
+        const mapped = QuestionsMapper.toCreate(dto, userId);
+        mapped.content = updatedContent;
         return await this.questionsRepository.save(mapped);
     }
 
-    async update(
-        dto: QuestionsUpdateDto,
-        questionId: number,
-        userId: number,
-        file?: Express.Multer.File,
-    ): Promise<QuestionsEntity> {
-        try {
-            const question = await this.questionsRepository.findOne({
-                where: { id: questionId, asked_by: { id: userId } },
-            });
-            if (!question) throw new ForbiddenException()
-            const slug = dto.title ? makeSlug(dto.title) : question.slug;
-            let filePath: string;
-            if (file) filePath = await this.enqueueImage(file, slug);
-            const mapped = QuestionsMapper.toUpdate(
-                dto,
-                questionId,
-                filePath,
-                slug,
-            );
+    async update(id: number, dto: QuestionsUpdateDto, userId: number): Promise<QuestionsEntity> {
+        const existing = await this.questionsRepository.findOne({ where: { id, asked_by: { id: userId } } });
+        if (!existing) throw new NotFoundException("Question not found");
+        if (dto.content) {
+            await ImageHelper.deleteImagesFromContent(existing.content);
+            const updatedContent = await ImageHelper.processImagesFromContent(dto.content);
+            const mapped = QuestionsMapper.toUpdate(dto, id)
+            mapped.content = updatedContent;
             return await this.questionsRepository.save(mapped);
-        } catch (error) {
-            throw new BadRequestException(error.message)
         }
+        const mapped = QuestionsMapper.toUpdate(dto, id)
+        return await this.questionsRepository.save(mapped);
     }
 
+
     async getAll(dto: PaginationRequestDto) {
-        try {
-            const [entities, total] =
-                await this.questionsRepository.findAll(dto);
-            const mapped = entities.map((entity) => QuestionsMapper.toResponseSimple(entity))
-            return new PaginationResponse<QuestionsResponseDto>(mapped, total, dto.page, dto.limit)
-        } catch (error) {
-            throw new BadRequestException(error.message)
-        }
+        const [entities, total] =
+            await this.questionsRepository.findAll(dto);
+        const mapped = entities.map((entity) => QuestionsMapper.toResponseSimple(entity))
+        return new PaginationResponse<QuestionsResponseDto>(mapped, total, dto.page, dto.limit)
     }
 
     async getOne(id: number) {
-        try {
-            const entity = await this.questionsRepository.getOne(id)
-            if (!entity) throw new NotFoundException()
-            const mapped = QuestionsMapper.toResponseDetail(entity)
-            return mapped
-        } catch (error) {
-            throw new BadRequestException(error.message)
-        }
+        const entity = await this.questionsRepository.getOne(id)
+        if (!entity) throw new NotFoundException()
+        const mapped = QuestionsMapper.toResponseDetail(entity)
+        return mapped
     }
 
     async remove(id: number, userId: number) {
-        try {
-            const entity = await this.questionsRepository.findOne({ where: { id, asked_by: { id: userId } } })
-            if (!entity) throw new ForbiddenException()
-            return await this.questionsRepository.remove(entity)
-        } catch (error) {
-            throw new BadRequestException(error.message)
-        }
-    }
-
-    private async enqueueImage(
-        file: Express.Multer.File,
-        slug: string,
-    ): Promise<string> {
-        try {
-            const { outputDir, finalFilename, publicUrl } =
-                await ImageHelper.prepareUploadPath(
-                    `questions/${slug}`,
-                    file.originalname,
-                );
-            await this.imageQueue.add('process-image', {
-                buffer: file.buffer,
-                filename: finalFilename,
-                outputDir,
-            });
-            return publicUrl;
-        } catch (error) {
-            throw new BadRequestException(error.message)
-        }
+        const entity = await this.questionsRepository.findOne({ where: { id, asked_by: { id: userId } } })
+        if (!entity) throw new ForbiddenException()
+        await ImageHelper.deleteImagesFromContent(entity.content);
+        return await this.questionsRepository.remove(entity)
     }
 }

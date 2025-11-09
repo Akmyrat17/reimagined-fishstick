@@ -11,4 +11,5 @@ export class QuestionsResponseDto {
     priority:QuestionsPriorityEnum
     asked_by:UsersEntity
     check_status:CheckStatusEnum
+    special:Date
 }

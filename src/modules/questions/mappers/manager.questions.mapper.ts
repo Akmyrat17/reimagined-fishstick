@@ -28,6 +28,7 @@ export class ManagerQuestionsMapper {
         if(filePath) entity.file_path = filePath
         if(dto.asked_by_id) entity.asked_by = new UsersEntity({id:dto.asked_by_id})
         if(dto.priority) entity.priority  = dto.priority
+        if(dto.special) entity.special = dto.special
         return entity
     }
 
@@ -38,6 +39,7 @@ export class ManagerQuestionsMapper {
         dto.slug = entity.slug
         dto.check_status = entity.check_status
         dto.title = entity.title
+        dto.special = entity.special
         dto.asked_by = entity.asked_by
         return dto
     }
@@ -51,6 +53,7 @@ export class ManagerQuestionsMapper {
         dto.title = entity.title
         dto.content= entity.content
         dto.asked_by = entity.asked_by
+        dto.special = entity.special
         return dto
     }
 }

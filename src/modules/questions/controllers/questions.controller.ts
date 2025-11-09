@@ -6,15 +6,11 @@ import {
     Body,
     Param,
     Query,
-    UseInterceptors,
-    UploadedFile,
     ParseIntPipe,
     Patch,
     UseGuards,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { PaginationRequestDto } from 'src/common/dto/pagination.request.dto';
-import * as multer from 'multer';
 import { JwtAuthGuard } from 'src/modules/auth/jwt/jwt-auth.guard';
 import { QuestionsCreateDto } from '../dtos/create-questions.dto';
 import { QuestionsUpdateDto } from '../dtos/update-questions.dto';
@@ -27,9 +23,8 @@ export class QuestionsController {
 
     @Post()
     @UseGuards(JwtAuthGuard)
-    @UseInterceptors(FileInterceptor('image', { storage: multer.memoryStorage() }))
-    async create(@Body() dto:QuestionsCreateDto,@CurrentUser('id',ParseIntPipe) userId:number, @UploadedFile() file?: Express.Multer.File) {
-        return this.questionsService.create(dto,userId, file);
+    async create(@Body() dto:QuestionsCreateDto,@CurrentUser('id',ParseIntPipe) userId:number) {
+        return this.questionsService.create(dto,userId);
     }
 
     @Get()
@@ -44,9 +39,8 @@ export class QuestionsController {
 
     @Patch(':id')
     @UseGuards(JwtAuthGuard)
-    @UseInterceptors(FileInterceptor('image', { storage: multer.memoryStorage() }))
-    async update(@Param('id', ParseIntPipe) id: number, @Body() dto: QuestionsUpdateDto, @CurrentUser('id',ParseIntPipe) userId:number,@UploadedFile() file?: Express.Multer.File) {
-        return this.questionsService.update(dto,id,userId,file)
+    async update(@Param('id', ParseIntPipe) id: number, @Body() dto: QuestionsUpdateDto, @CurrentUser('id',ParseIntPipe) userId:number) {
+        return this.questionsService.update(id,dto,userId)
     }
 
     @Delete(':id')
