@@ -7,12 +7,17 @@ import { AnswersUpdateDto } from '../dtos/update-answers.dto';
 import { AnswersResponseDto } from '../dtos/response-answers.dto';
 import { AnswersRepository } from '../repositories/answers.repository';
 import { AnswersMapper } from '../mappers/answers.mapper';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AnswersService {
+  private readonly baseUrl:string
   constructor(
     private readonly answersRepository: AnswersRepository,
-  ) { }
+    private readonly configService:ConfigService
+  ) { 
+    this.baseUrl = configService.get<string>('APP_URL')
+  }
 
   async create(dto:AnswersCreateDto,userId:number){
     const mapped = AnswersMapper.toCreate(dto,userId)
@@ -36,7 +41,11 @@ export class AnswersService {
   async getAll(dto: PaginationRequestDto) {
     const [entities, total] =
       await this.answersRepository.findAll(dto);
-    const mapped = entities.map((entity) =>AnswersMapper.toResponseSimple(entity))
+    const mapped = entities.map((entity) =>{
+      const dto = AnswersMapper.toResponseSimple(entity)
+      dto.content = ImageHelper.prependBaseUrl(dto.content,this.baseUrl)
+      return dto
+    })
     return new PaginationResponse<AnswersResponseDto>(mapped, total, dto.page, dto.limit)
   }
 
@@ -44,6 +53,7 @@ export class AnswersService {
     const entity = await this.answersRepository.getOne(id)
     if (!entity) throw new NotFoundException()
     const mapped = AnswersMapper.toResponseSimple(entity)
+    mapped.content = ImageHelper.prependBaseUrl(mapped.content,this.baseUrl)
     return mapped
   }
 

@@ -12,46 +12,46 @@ import { PaginationRequestDto } from 'src/common/dto/pagination.request.dto';
 import { PaginationResponse } from 'src/common/dto/pagination.response.dto';
 import { QuestionsResponseDto } from '../dtos/response-questions.dto';
 import { QuestionsQueryDto } from '../dtos/query-questions.dto';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class ManagerQuestionsService {
+  private readonly baseUrl: string
   constructor(
     private readonly managerQuestionsRepository: ManagerQuestionsRepository,
-    @InjectQueue('image-queue') private readonly imageQueue: Queue,
-  ) { }
+    private readonly configService: ConfigService
+  ) {
+    this.baseUrl = configService.get<string>('APP_URL')
+  }
 
-  async create(
-    dto: QuestionsCreateDto,
-    file?: Express.Multer.File,
-  ): Promise<QuestionsEntity> {
-    let filePath: string;
+  async create(dto: QuestionsCreateDto): Promise<QuestionsEntity> {
     const slug = makeSlug(dto.title);
-    if (file) filePath =await this.enqueueImage(file,slug);
-    const mapped = ManagerQuestionsMapper.toCreate(dto, slug,filePath);
+    const mapped = ManagerQuestionsMapper.toCreate(dto, slug);
+    const updatedContent = await ImageHelper.processImagesFromContent(dto.content)
+    mapped.content = updatedContent
     return await this.managerQuestionsRepository.save(mapped);
   }
 
-  async update(  dto: QuestionsUpdateDto,questionId: number,file?: Express.Multer.File  ): Promise<QuestionsEntity> {
-    const question = await this.managerQuestionsRepository.findOne({
-      where: { id: questionId },
-    });
+  async update(dto: QuestionsUpdateDto, questionId: number): Promise<QuestionsEntity> {
+    const question = await this.managerQuestionsRepository.findOne({where: { id: questionId }});
     if (!question) throw new NotFoundException();
-    const slug = dto.title ? makeSlug(dto.title) : question.slug;
-    let filePath: string;
-    if (file) filePath = await this.enqueueImage(file, slug);
-    const mapped = ManagerQuestionsMapper.toUpdate(
-      dto,
-      questionId,
-      filePath,
-      slug,
-    );
+    const mapped = ManagerQuestionsMapper.toUpdate(dto, questionId)
+    if(dto.content){
+      await ImageHelper.deleteImagesFromContent(question.content)
+      const updatedContent =await ImageHelper.processImagesFromContent(dto.content)
+      mapped.content = updatedContent
+    }
     return await this.managerQuestionsRepository.save(mapped);
   }
 
   async getAll(dto: QuestionsQueryDto) {
     const [entities, total] =
       await this.managerQuestionsRepository.findAll(dto);
-    const mapped = entities.map((entity) => ManagerQuestionsMapper.toResponseSimple(entity))
+    const mapped = entities.map((entity) => {
+      const dto = ManagerQuestionsMapper.toResponseSimple(entity)
+      dto.content = ImageHelper.prependBaseUrl(dto.content,this.baseUrl)
+      return dto
+    })
     return new PaginationResponse<QuestionsResponseDto>(mapped, total, dto.page, dto.limit)
   }
 
@@ -59,31 +59,14 @@ export class ManagerQuestionsService {
     const entity = await this.managerQuestionsRepository.getOne(id)
     if (!entity) throw new NotFoundException()
     const mapped = ManagerQuestionsMapper.toResponseDetail(entity)
+    mapped.content = ImageHelper.prependBaseUrl(mapped.content,this.baseUrl)
     return mapped
   }
 
   async remove(id: number) {
-    const result = await this.managerQuestionsRepository.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
-    }
-    return `Product with ID ${id} successfully deleted`;
-  }
-
-  private async enqueueImage(
-    file: Express.Multer.File,
-    slug: string,
-  ): Promise<string> {
-    const { outputDir, finalFilename, publicUrl } =
-      await ImageHelper.prepareUploadPath(
-        `questions/${slug}`,
-        file.originalname,
-      );
-    await this.imageQueue.add('process-image', {
-      buffer: file.buffer,
-      filename: finalFilename,
-      outputDir,
-    });
-    return publicUrl;
+    const entity = await this.managerQuestionsRepository.findOne({where: { id }});
+    if (!entity) throw new NotFoundException();
+    await ImageHelper.deleteImagesFromContent(entity.content)
+    return await this.managerQuestionsRepository.remove(entity);
   }
 }

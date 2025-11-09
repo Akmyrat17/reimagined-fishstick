@@ -93,4 +93,15 @@ export class ImageHelper {
         return $.html();
     }
 
+    static prependBaseUrl(content: string, baseUrl: string): string {
+        const $ = cheerio.load(content);
+        $('img').each((_, img) => {
+            const src = $(img).attr('src');
+            if (src && !src.startsWith('http')) {
+                $(img).attr('src', baseUrl + src);
+            }
+        });
+        return $.html();
+    }
+
 }
