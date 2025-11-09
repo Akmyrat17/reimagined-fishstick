@@ -30,4 +30,11 @@ export class UsersMapper {
    response.created_at = usersEntity.created_at
    return response 
   }
+
+  public static toResponseSimple(usersEntity:UsersEntity){
+    const response = new UsersResponseDto()
+    response.id = usersEntity.id
+    response.fullname = usersEntity.fullname
+    return response 
+  }
 }

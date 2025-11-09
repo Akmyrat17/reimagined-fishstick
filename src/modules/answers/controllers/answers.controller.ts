@@ -27,9 +27,8 @@ export class AnswersController {
 
     @Post()
     @UseGuards(JwtAuthGuard)
-    @UseInterceptors(FileInterceptor('image', { storage: multer.memoryStorage() }))
-    async create(@Body() dto: AnswersCreateDto,@CurrentUser('id',ParseIntPipe) userId:number, @UploadedFile() file?: Express.Multer.File) {
-        return this.answersService.create(dto,userId, file);
+    async create(@Body() dto: AnswersCreateDto, @CurrentUser('id', ParseIntPipe) userId: number) {
+        return this.answersService.create(dto, userId);
     }
 
     @Get()
@@ -44,14 +43,13 @@ export class AnswersController {
 
     @Patch(':id')
     @UseGuards(JwtAuthGuard)
-    @UseInterceptors(FileInterceptor('image', { storage: multer.memoryStorage() }))
-    async update(@Param('id', ParseIntPipe) id: number,@CurrentUser('id',ParseIntPipe) userId:number, @Body() dto: AnswersUpdateDto, @UploadedFile() file?: Express.Multer.File) {
-        return this.answersService.update(dto, id,userId, file)
+    async update(@Param('id', ParseIntPipe) id: number, @CurrentUser('id', ParseIntPipe) userId: number, @Body() dto: AnswersUpdateDto) {
+        return this.answersService.update(dto, id, userId)
     }
 
     @Delete(':id')
     @UseGuards(JwtAuthGuard)
-    async remove(@Param('id', ParseIntPipe) id: number,@CurrentUser('id',ParseIntPipe) userId:number) {
-        return await this.answersService.remove(id,userId)
+    async remove(@Param('id', ParseIntPipe) id: number, @CurrentUser('id', ParseIntPipe) userId: number) {
+        return await this.answersService.remove(id, userId)
     }
 }
