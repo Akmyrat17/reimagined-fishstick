@@ -13,8 +13,8 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
     async findAll(dto: PaginationRequestDto) {
         const query = this.createQueryBuilder('questions')
             .leftJoin('questions.asked_by','asked_by')
-            .select(['questions.id', 'questions.slug', 'questions.file_path'])
-            .addSelect(['asked_by.id','asked_by.nickname'])
+            .select(['questions.id', 'questions.slug', 'questions.priority','questions.special'])
+            .addSelect(['asked_by.id','asked_by.fullname'])
         if (dto.keyword && dto.keyword != '') {
             query.where(`questions.title LIKE :keyword`, { keyword: `%${dto.keyword}%` })
         }
@@ -24,8 +24,8 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
     async getOne(id: number) {
         return await this.createQueryBuilder('questions')
         .leftJoin('questions.asked_by','asked_by')
-        .select(['questions.id','questions.slug','questions.priority','questions.file_path', 'questions.title','questions.content'])
-        .addSelect(['asked_by.id','asked_by.fullname','asked_by.nickname','asked_by.role'])
+        .select(['questions.id','questions.slug','questions.priority','questions.special','questions.title','questions.content'])
+        .addSelect(['asked_by.id','asked_by.fullname'])
         .where('questions.id  = :id',{id})
         .andWhere('questions.check_status = :value',{value:CheckStatusEnum.APPROVED})
         .getOne()
