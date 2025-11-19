@@ -10,23 +10,25 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
         super(QuestionsEntity, dataSource.createEntityManager());
     }
 
-    async findAll(dto: PaginationRequestDto) {
+    async findAll(dto: PaginationRequestDto):Promise<[QuestionsEntity[],number]> {
         const query = this.createQueryBuilder('questions')
             .leftJoin('questions.asked_by','asked_by')
-            .select(['questions.id', 'questions.slug', 'questions.priority','questions.special'])
+            .select(['questions.id', 'questions.slug', 'questions.priority','questions.special','questions.title'])
             .addSelect(['asked_by.id','asked_by.fullname'])
         if (dto.keyword && dto.keyword != '') {
             query.where(`questions.title LIKE :keyword`, { keyword: `%${dto.keyword}%` })
         }
-        return await query.andWhere('questions.check_status = :value',{value:CheckStatusEnum.APPROVED}).take(dto.limit).offset((dto.page - 1) * dto.limit).getManyAndCount()
+        const count = await query.andWhere('questions.check_status = :value',{value:CheckStatusEnum.APPROVED}).getCount()
+        const entities = await query.andWhere('questions.check_status = :value',{value:CheckStatusEnum.APPROVED}).take(dto.limit).offset((dto.page - 1) * dto.limit).getMany()
+        return [entities,count]
     }
 
-    async getOne(id: number) {
+    async getOne(slug: string) {
         return await this.createQueryBuilder('questions')
         .leftJoin('questions.asked_by','asked_by')
         .select(['questions.id','questions.slug','questions.priority','questions.special','questions.title','questions.content'])
         .addSelect(['asked_by.id','asked_by.fullname'])
-        .where('questions.id  = :id',{id})
+        .where('questions.slug  = :slug',{slug})
         .andWhere('questions.check_status = :value',{value:CheckStatusEnum.APPROVED})
         .getOne()
     }

@@ -10,7 +10,7 @@ import { AnswersEntity } from 'src/modules/answers/entites/answers.entity';
 
 @Entity({ name: 'users' })
 export class UsersEntity extends BaseEntity {
-  @Column({ unique: true, nullable: false })
+  @Column({ unique: true, nullable: true })
   fullname: string;
 
   // @Column({ unique: true, nullable: false })

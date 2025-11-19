@@ -30,6 +30,9 @@ export class QuestionsEntity extends BaseEntity {
     @Column({ type: "enum", nullable: false, default: QuestionsPriorityEnum.LOW, enum: QuestionsPriorityEnum })
     priority: QuestionsPriorityEnum
 
+    @Column({type:"text",nullable:true})
+    reported_reason: string
+
     @OneToMany(() => AnswersEntity, (event) => event.answered_to)
     answers: AnswersEntity[]
 

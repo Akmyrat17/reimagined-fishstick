@@ -41,17 +41,17 @@ export class QuestionsService {
     }
 
 
-    async getAll(dto: PaginationRequestDto) {
+    async getAll(dto: PaginationRequestDto,userId:number) {
         const [entities, total] =
             await this.questionsRepository.findAll(dto);
-        const mapped = entities.map((entity) => QuestionsMapper.toResponseSimple(entity))
+        const mapped = entities.map((entity) => QuestionsMapper.toResponseSimple(entity,userId))
         return new PaginationResponse<QuestionsResponseDto>(mapped, total, dto.page, dto.limit)
     }
 
-    async getOne(id: number) {
-        const entity = await this.questionsRepository.getOne(id)
+    async getOne(slug: string,userId:number) {
+        const entity = await this.questionsRepository.getOne(slug)
         if (!entity) throw new NotFoundException()
-        const mapped = QuestionsMapper.toResponseDetail(entity)
+        const mapped = QuestionsMapper.toResponseDetail(entity,userId)
         return mapped
     }
 

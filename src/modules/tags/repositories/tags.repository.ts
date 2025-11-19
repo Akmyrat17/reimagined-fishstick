@@ -7,7 +7,7 @@ import { LangEnum } from "src/common/enums";
 @Injectable()
 export class TagsRepository extends Repository<TagsEntity>{
     constructor(private readonly datasource:DataSource){super(TagsEntity,datasource.createEntityManager())}
-    async getAll(dto:PaginationRequestDto,lang:LangEnum) {
+    async getAll(dto:PaginationRequestDto,lang:LangEnum):Promise<[TagsEntity[],number]> {
             const query = this.createQueryBuilder('tags')
             .leftJoin('tags.questions','questions')
             .select(['tags.id',`tags.name_${lang}`,`tags.desc_${lang}`])
@@ -22,6 +22,8 @@ export class TagsRepository extends Repository<TagsEntity>{
             }
     
             const offset = (dto.page - 1) * dto.limit
-            return await query.take(dto.limit).offset(offset).getManyAndCount()
+            const total = await query.getCount()
+            const data = await query.skip(offset).take(dto.limit).getMany()
+            return [data,total]
         }
 }

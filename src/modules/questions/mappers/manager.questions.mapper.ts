@@ -4,6 +4,7 @@ import { QuestionsEntity } from "../entities/questions.entity";
 import { QuestionsUpdateDto } from "../dtos/update-questions.dto";
 import { QuestionsResponseDto } from "../dtos/response-questions.dto";
 import { makeSlug } from "src/common/utils/slug.helper";
+import { CheckStatusEnum } from "src/common/enums/check-status.enum";
 
 export class ManagerQuestionsMapper {
     public static toCreate(dto: QuestionsCreateDto,slug:string) :QuestionsEntity{
@@ -11,7 +12,6 @@ export class ManagerQuestionsMapper {
         entity.content=dto.content
         entity.title = dto.title
         entity.slug = slug
-        entity.check_status = dto.check_status
         entity.asked_by = new UsersEntity({id:dto.asked_by_id})
         if(dto.priority) entity.priority  = dto.priority
         return entity
@@ -19,14 +19,15 @@ export class ManagerQuestionsMapper {
 
     public static toUpdate(dto:QuestionsUpdateDto,id:number) {
         const entity = new QuestionsEntity({id})
-        if(dto.title) {
-            entity.title = dto.title
-            entity.slug = makeSlug(dto.title)
+        if(dto.check_status) {
+            entity.check_status = dto.check_status
+            if (dto.check_status === CheckStatusEnum.REPORTED) {
+                entity.reported_reason = dto.reported_reason
+            }
         }
-        if(dto.check_status) entity.check_status = dto.check_status
-        if(dto.asked_by_id) entity.asked_by = new UsersEntity({id:dto.asked_by_id})
         if(dto.priority) entity.priority  = dto.priority
         if(dto.special) entity.special = dto.special
+        console.log(entity,'entity')
         return entity
     }
 

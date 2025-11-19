@@ -27,7 +27,7 @@ export class QuestionsMapper {
         return entity
     }
 
-    public static toResponseSimple(entity:QuestionsEntity) {
+    public static toResponseSimple(entity:QuestionsEntity,userId:number) {
         const dto = new QuestionsResponseDto
         dto.file_path = entity.file_path
         dto.priority = entity.priority
@@ -35,10 +35,11 @@ export class QuestionsMapper {
         dto.special = entity.special
         dto.title = entity.title
         dto.asked_by = entity.asked_by
+        dto.mine = entity.asked_by.id === userId
         return dto
     }
 
-    public static toResponseDetail(entity:QuestionsEntity) {
+    public static toResponseDetail(entity:QuestionsEntity,userId:number) {
         const dto = new QuestionsResponseDto
         dto.file_path = entity.file_path
         dto.priority = entity.priority

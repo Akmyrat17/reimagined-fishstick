@@ -7,7 +7,7 @@ import { LangEnum } from "src/common/enums";
 @Injectable()
 export class ProfessionsRepository extends Repository<ProfessionsEntity>{
     constructor(private readonly datasource:DataSource){super(ProfessionsEntity,datasource.createEntityManager())}
-    async getAll(dto:PaginationRequestDto,lang:LangEnum) {
+    async getAll(dto:PaginationRequestDto,lang:LangEnum):Promise<[ProfessionsEntity[],number]> {
             const query = this.createQueryBuilder('professions')
             .leftJoin('professions.users','users')
             .select(['professions.id',`professions.name_${lang}`,`professions.desc_${lang}`])
@@ -22,6 +22,8 @@ export class ProfessionsRepository extends Repository<ProfessionsEntity>{
             }
     
             const offset = (dto.page - 1) * dto.limit
-            return await query.take(dto.limit).offset(offset).getManyAndCount()
+            const total = await query.getCount()
+            const data = await query.take(dto.limit).offset(offset).getMany()
+            return [data,total]
         }
 }

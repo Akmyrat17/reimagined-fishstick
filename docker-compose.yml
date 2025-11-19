@@ -15,7 +15,34 @@ services:
       timeout: 5s
       retries: 5
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0 # Use a specific version
+    container_name: elasticsearch
+    environment:
+      # Required for single-node development setup:
+      - discovery.type=single-node
+      # IMPORTANT: Use a secure password in production!
+      - xpack.security.enabled=false
+    ports:
+      # REST API (for your application)
+      - "9201:9200"
+      # Node communication (if you add more nodes later)
+      - "9301:9300"
+    volumes:
+      # Persist data so it doesn't disappear when the container stops
+      - esdata:/usr/share/elasticsearch/data
+    ulimits:
+      # Recommended settings for Elasticsearch performance
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
 volumes:
   redis_data:
-
+  esdata:
+    driver: local

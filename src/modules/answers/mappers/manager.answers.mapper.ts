@@ -29,7 +29,7 @@ export class ManagerAnswersMapper {
         const dto = new AnswersResponseDto()
         dto.id = entity.id
         dto.answered_by = UsersMapper.toResponseSimple(entity.answered_by)
-        dto.answered_to = QuestionsMapper.toResponseSimple(entity.answered_to)
+        dto.answered_to = QuestionsMapper.toResponseSimple(entity.answered_to,null)
         dto.content = entity.content
         dto.check_status = entity.check_status
         dto.file_path = entity.file_path
@@ -40,7 +40,7 @@ export class ManagerAnswersMapper {
         const dto = new AnswersResponseDto()
         dto.id = entity.id
         dto.answered_by = UsersMapper.toResponseSimple(entity.answered_by)
-        dto.answered_to = QuestionsMapper.toResponseSimple(entity.answered_to)
+        dto.answered_to = QuestionsMapper.toResponseSimple(entity.answered_to,null)
         dto.content = entity.content
         dto.check_status = entity.check_status
         dto.file_path = entity.file_path

@@ -26,7 +26,7 @@ export class AnswersMapper {
         const dto = new AnswersResponseDto()
         dto.id = entity.id
         dto.answered_by = UsersMapper.toResponseSimple(entity.answered_by)
-        dto.answered_to = QuestionsMapper.toResponseSimple(entity.answered_to)
+        dto.answered_to = QuestionsMapper.toResponseSimple(entity.answered_to,null)
         dto.content = entity.content
         return dto
     }

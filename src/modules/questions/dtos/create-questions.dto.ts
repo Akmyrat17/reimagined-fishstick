@@ -11,10 +11,6 @@ export class QuestionsCreateDto {
   @IsNumber()
   asked_by_id:number
 
-  @IsNotEmpty()
-  @IsEnum(CheckStatusEnum)
-  check_status:CheckStatusEnum
-
   @IsString()
   @IsNotEmpty()
   content: string;

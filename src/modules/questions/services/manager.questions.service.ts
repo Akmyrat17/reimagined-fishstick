@@ -36,11 +36,6 @@ export class ManagerQuestionsService {
     const question = await this.managerQuestionsRepository.findOne({where: { id: questionId }});
     if (!question) throw new NotFoundException();
     const mapped = ManagerQuestionsMapper.toUpdate(dto, questionId)
-    if(dto.content){
-      await ImageHelper.deleteImagesFromContent(question.content)
-      const updatedContent =await ImageHelper.processImagesFromContent(dto.content)
-      mapped.content = updatedContent
-    }
     return await this.managerQuestionsRepository.save(mapped);
   }
 

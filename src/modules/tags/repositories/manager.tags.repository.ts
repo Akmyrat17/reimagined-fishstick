@@ -8,7 +8,7 @@ import { LangEnum } from "src/common/enums";
 export class ManagerTagsRepository extends Repository<TagsEntity>{
     constructor(private readonly datasource:DataSource){super(TagsEntity,datasource.createEntityManager())}
 
-    async getAll(dto:PaginationRequestDto,lang:LangEnum) {
+    async getAll(dto:PaginationRequestDto,lang:LangEnum):Promise<[TagsEntity[],number]> {
         const query = this.createQueryBuilder('tags')
         .select(['tags.id',`tags.name_tk`,`tags.desc_tk`,`tags.name_en`,`tags.desc_en`,`tags.name_ru`,`tags.desc_ru`])
         if(dto.keyword != '') {
@@ -25,6 +25,8 @@ export class ManagerTagsRepository extends Repository<TagsEntity>{
         }
 
         const offset = (dto.page - 1) * dto.limit
-        return await query.skip(offset).take(dto.limit).getManyAndCount()
+        const total = await query.getCount()
+        const data = await query.skip(offset).take(dto.limit).getMany()
+        return [data,total]
     }
 }
