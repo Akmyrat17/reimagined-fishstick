@@ -26,7 +26,7 @@ export class ProfessionsEntity extends BaseEntity {
     @Column({type:"text",nullable:false})
     slug:string
 
-    @OneToMany(()=>UsersEntity,(event)=> event.id)
+    @OneToMany(()=>UsersEntity,(event)=> event.profession)
     users:UsersEntity[]
     
     constructor(init?:Partial<ProfessionsEntity>){

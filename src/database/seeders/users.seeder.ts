@@ -8,9 +8,9 @@ async function seed() {
     const connection = await seederDataSource.initialize();
     const userRepository = connection.getRepository(UsersEntity);
     const user = new UsersEntity();
-    user.username = "admin";
+    user.fullname = "adminfullname";
     user.password = await bcrypt.hash("admin", 10);
-    user.phone_number = 61234555;
+    user.email = "admin@gmail.com"
     user.role = RolesEnum.ADMIN;
     await userRepository.save(user);
 }

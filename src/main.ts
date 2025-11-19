@@ -6,6 +6,8 @@ import { ClassSerializerInterceptor, Logger, ValidationPipe, VersioningType } fr
 import { ConfigService } from '@nestjs/config';
 import { HttpExceptionFilter } from './common/http/exception.filter';
 import { Reflector } from '@nestjs/core';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

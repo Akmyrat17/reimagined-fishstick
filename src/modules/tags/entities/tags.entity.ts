@@ -26,10 +26,10 @@ export class TagsEntity extends BaseEntity {
     @Column({type:"text",nullable:false})
     slug:string
 
-    @ManyToMany(()=>QuestionsEntity,(event)=>event.id)
+    @ManyToMany(()=>QuestionsEntity,(event)=>event.tags,{onDelete:"CASCADE"})
     questions:QuestionsEntity[]
     
-    @ManyToMany(()=>UsersEntity,(event)=>event.id)
+    @ManyToMany(()=>UsersEntity,(event)=>event.tags,{onDelete:"CASCADE"})
     users:UsersEntity[]
     
     constructor(init?:Partial<TagsEntity>){

@@ -1,14 +1,12 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { LoginDto } from './dtos/login.dto';
 import { SignUpDto } from './dtos/sign-up.dto';
 import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from './jwt/jwt.payload';
 import * as bcrypt from 'bcrypt';
 import { RolesEnum } from 'src/common/enums';
-import { ManagerUsersService } from '../users/services/manager.users.service';
 import { ConfigService } from '@nestjs/config';
 import { UsersEntity } from '../users/entities/user.entity';
-import { CreateUserDto } from '../users/dtos/create-user.dto';
 import { UsersRepository } from '../users/repositories/users.repository';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { GmailHelper } from 'src/common/utils/gmail.helper';
@@ -25,7 +23,6 @@ export class AuthService {
   private readonly appUrl: string
   constructor(
     private jwtService: JwtService,
-    private managerUsersService: ManagerUsersService,
     private configService: ConfigService,
     private usersRepository:UsersRepository,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
@@ -40,11 +37,17 @@ export class AuthService {
     const { email, password } = loginDto;
     try {
       const result = await this.usersRepository.getUserByEmail(email);
+      if(!result) throw new NotFoundException("Email or password is incorrect")
+        console.log(result)
       const isMatch = await bcrypt.compare(password, result.password);
-      if (!isMatch) throw new UnauthorizedException('auth.password_not_match');
+      if (!isMatch) throw new UnauthorizedException('Email or password is incorrect');
       const tokens = await this.generateTokens(result)
+      if(!result.is_verified) await this.sendVerificationToken(result.email)
       return {tokens,result}
-    } catch (error) {    throw new UnauthorizedException(error.message || error.details)}
+    } catch (error) {
+      console.log(error)    
+      throw new BadRequestException(error.message || error.details)
+    }
   }
 
     async signUp(signUpDto: SignUpDto) {
@@ -64,8 +67,8 @@ export class AuthService {
     }
 
   async refreshToken(refreshToken: string) {
-    const payload = this.jwtService.decode(refreshToken);
-    const user = await this.managerUsersService.findOne(payload.id);
+    const payload:JwtPayload = this.jwtService.decode(refreshToken);
+    const user = await this.usersRepository.findOne({where:{id:payload.id}});
     if (!user) throw new UnauthorizedException('User not found');
     return await this.generateTokens(user);
   }
@@ -89,10 +92,14 @@ export class AuthService {
   }
 
   private async sendVerificationToken(email:string){
-    const verificationToken = uuidv4()
-    await this.cacheManager.set(`verify:${verificationToken}`,email, 1000 * 60 * 10);
-    const verificationUrl = `${this.appUrl}/auth/verify-email/${verificationToken}`;
-    await GmailHelper.SendVerificationEmail(email, verificationUrl);
-    return { message: 'Verification email sent. Please check your inbox.' };
+    try {
+      const verificationToken = uuidv4()
+      await this.cacheManager.set(`verify:${verificationToken}`,email, 1000 * 60 * 10);
+      const verificationUrl = `${this.appUrl}/api/v1/auth/verify-email/${verificationToken}`;
+      await GmailHelper.SendVerificationEmail(email, verificationUrl);
+      return { message: 'Verification email sent. Please check your inbox.' };
+    } catch (error) {
+      throw new InternalServerErrorException(error.details || error.message)
+    }
 }
 }

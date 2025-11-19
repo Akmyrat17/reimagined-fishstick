@@ -12,9 +12,9 @@ import { ManagerAnswersService } from './services/manager.answers.service';
 @Module({
     imports: [
         TypeOrmModule.forFeature([AnswersEntity]),
-        BullModule.registerQueue({
-            name: 'image-queue'
-        })
+            // BullModule.registerQueue({
+            //     name: 'image-queue'
+            // })
     ],
     controllers: [ManagerAnswersController,AnswersController],
     providers: [ManagerAnswersService,AnswersService,ManagerAnswersRepository,AnswersRepository],

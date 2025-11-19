@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Param, ParseIntPipe, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Headers, Param, ParseIntPipe, Patch, Post, Query } from "@nestjs/common";
 import { ManagerProfessionsService } from "../services/manager.professions.service";
 import { ProfessionsCreateDto } from "../dtos/create-professions.dto";
 import { ProfessionsUpdateDto } from "../dtos/update-professions.dto";
@@ -24,8 +24,13 @@ export class ManagerProfessionsController{
         return await this.managerProfessionsService.getAll(dto,lang)
     }
 
-    @Get(":id")
-    async getOne(@Param("id",ParseIntPipe) id:number){
-        return await this.managerProfessionsService.getOne(id)
+    @Delete(":id")
+    async remove(@Param("id",ParseIntPipe) id:number) {
+        return await this.managerProfessionsService.delete(id)
     }
+    
+    // @Get(":id")
+    // async getOne(@Param("id",ParseIntPipe) id:number){
+    //     return await this.managerProfessionsService.getOne(id)
+    // }
 }

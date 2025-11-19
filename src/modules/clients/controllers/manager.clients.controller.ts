@@ -26,9 +26,8 @@ import { ClientsUpdateDto } from '../dtos/update-clients.dto';
 export class ManagerClientsController {
     constructor(private readonly managerClientsService: ManagerClientsService) { }
     @Post()
-    @UseInterceptors(FilesInterceptor('image',10, { storage: multer.memoryStorage() }))
-    async create(@Body() dto:ClientsCreateDto, @UploadedFile() file?: Express.Multer.File) {
-        return this.managerClientsService.create(dto, file);
+    async create(@Body() dto:ClientsCreateDto) {
+        return this.managerClientsService.create(dto);
     }
 
     @Get()
@@ -42,9 +41,8 @@ export class ManagerClientsController {
     }
 
     @Patch(':id')
-    @UseInterceptors(FilesInterceptor('image',10, { storage: multer.memoryStorage() }))
-    async update(@Param('id', ParseIntPipe) id: number, @Body() dto: ClientsUpdateDto, @UploadedFile() file?: Express.Multer.File) {
-        return this.managerClientsService.update(dto,id,file)
+    async update(@Param('id', ParseIntPipe) id: number, @Body() dto: ClientsUpdateDto) {
+        return this.managerClientsService.update(dto,id)
     }
 
     @Delete(':id')

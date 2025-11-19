@@ -17,7 +17,7 @@ import { ClientsResponseDto } from '../dtos/response-clients.dto';
 export class ManagerClientsService {
   constructor(
     private readonly managerClientsRepository: ManagerClientsRepository,
-    @InjectQueue('image-queue') private readonly imageQueue: Queue,
+    // @InjectQueue('image-queue') private readonly imageQueue: Queue,
   ) { }
 
   async create(
@@ -86,11 +86,11 @@ export class ManagerClientsService {
         `questions/${slug}`,
         file.originalname,
       );
-    await this.imageQueue.add('process-image', {
-      buffer: file.buffer,
-      filename: finalFilename,
-      outputDir,
-    });
+    // await this.imageQueue.add('process-image', {
+    //   buffer: file.buffer,
+    //   filename: finalFilename,
+    //   outputDir,
+    // });
     return publicUrl;
   }
 }

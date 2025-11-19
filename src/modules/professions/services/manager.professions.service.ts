@@ -25,13 +25,19 @@ export class ManagerProfessionsService {
 
     async getAll(dto:PaginationRequestDto,lang:LangEnum) {
         const [entities,total] =await this.managerProfessionsRepository.getAll(dto,lang)
-        const mapped = entities.map(e=>ManagerProfessionsMapper.toResponse(e,lang))
+        const mapped = entities.map(e=>ManagerProfessionsMapper.toResponse(e))
         return new PaginationResponse<ProfessionsResponseDto>(mapped,total,dto.page,dto.limit)
     }
 
-    async getOne (id:number) {
-        const entity = await this.managerProfessionsRepository.findOneBy({id})
-        if(!entity) throw new NotFoundException()
-        return entity
+    async delete (id:number) {
+        const entity = await this.managerProfessionsRepository.findOne({where:{id}})
+        if(!entity) throw new NotFoundException("Profession not found")
+        return await this.managerProfessionsRepository.remove(entity)
     }
+
+    // async getOne (id:number) {
+    //     const entity = await this.managerProfessionsRepository.findOneBy({id})
+    //     if(!entity) throw new NotFoundException()
+    //     return entity
+    // }
 }

@@ -24,10 +24,10 @@ export class QuestionsEntity extends BaseEntity {
     @Column({ type: 'timestamptz', nullable: true })
     special: Date
 
-    @Column({ type: "enum", nullable: false, default: CheckStatusEnum.NOT_CHECKED })
+    @Column({ type: "enum", nullable: false, default: CheckStatusEnum.NOT_CHECKED, enum: CheckStatusEnum })
     check_status: CheckStatusEnum
 
-    @Column({ type: "enum", nullable: false, default: QuestionsPriorityEnum.LOW })
+    @Column({ type: "enum", nullable: false, default: QuestionsPriorityEnum.LOW, enum: QuestionsPriorityEnum })
     priority: QuestionsPriorityEnum
 
     @OneToMany(() => AnswersEntity, (event) => event.answered_to)
@@ -40,7 +40,7 @@ export class QuestionsEntity extends BaseEntity {
     @ManyToMany(() => ClientsEntity, (event) => event.id, { onDelete: "CASCADE" })
     recommended: ClientsEntity[]
 
-    @ManyToMany(() => TagsEntity, (event) => event.id)
+    @ManyToMany(() => TagsEntity, (event) => event.questions,{onDelete:"CASCADE"})
     @JoinTable({
         name: "question_tags",
         joinColumn: {

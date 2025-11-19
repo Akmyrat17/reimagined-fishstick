@@ -9,9 +9,9 @@ import { ManagerClientsService } from './services/manager.clients.service';
 @Module({
     imports: [
         TypeOrmModule.forFeature([ClientsEntity]),
-        BullModule.registerQueue({
-            name: 'image-queue'
-        })
+        // BullModule.registerQueue({
+        //     name: 'image-queue'
+        // })
     ],
     controllers: [ManagerClientsController],
     providers: [ManagerClientsRepository,ManagerClientsService],

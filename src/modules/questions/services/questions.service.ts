@@ -16,7 +16,7 @@ import { QuestionsMapper } from '../mappers/questions.mapper';
 export class QuestionsService {
     constructor(
         private readonly questionsRepository: QuestionsRepository,
-        @InjectQueue('image-queue') private readonly imageQueue: Queue,
+        // @InjectQueue('image-queue') private readonly imageQueue: Queue,
     ) { }
 
     async create(dto: QuestionsCreateDto, userId: number): Promise<QuestionsEntity> {

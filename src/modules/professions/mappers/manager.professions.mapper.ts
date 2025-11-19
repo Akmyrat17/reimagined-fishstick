@@ -11,8 +11,9 @@ export class ManagerProfessionsMapper {
         entity.name_en = dto.name_en
         entity.name_tk = dto.name_tk
         entity.desc_en = dto.desc_en
-        entity.desc_en = dto.desc_en
-        entity.desc_en = dto.desc_en
+        entity.desc_ru = dto.desc_ru
+        entity.desc_tk = dto.desc_tk
+        entity.slug = makeSlug(entity.name_en)
         return entity
     }
 
@@ -30,7 +31,20 @@ export class ManagerProfessionsMapper {
         return entity
     }
 
-    public static toResponse(entity:ProfessionsEntity,lang:LangEnum) {
+    public static toResponse(entity:ProfessionsEntity) {
+        const dto = new ProfessionsResponseDto()
+        dto.id = entity.id
+        dto.name_en = entity.name_en
+        dto.name_ru = entity.name_ru
+        dto.name_tk = entity.name_tk
+        dto.desc_en = entity.desc_en
+        dto.desc_ru = entity.desc_ru
+        dto.desc_tk = entity.desc_tk
+        dto.slug = entity.slug
+        return dto
+    }
+
+    public static toResponseSimple(entity:ProfessionsEntity,lang:LangEnum) {
         const dto = new ProfessionsResponseDto()
         dto.id = entity.id
         dto.name = entity[`name_${lang}`]

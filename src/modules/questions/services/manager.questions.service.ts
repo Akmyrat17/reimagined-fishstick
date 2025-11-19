@@ -8,7 +8,6 @@ import { makeSlug } from 'src/common/utils/slug.helper';
 import { ManagerQuestionsMapper } from '../mappers/manager.questions.mapper';
 import { QuestionsEntity } from '../entities/questions.entity';
 import { QuestionsUpdateDto } from '../dtos/update-questions.dto';
-import { PaginationRequestDto } from 'src/common/dto/pagination.request.dto';
 import { PaginationResponse } from 'src/common/dto/pagination.response.dto';
 import { QuestionsResponseDto } from '../dtos/response-questions.dto';
 import { QuestionsQueryDto } from '../dtos/query-questions.dto';
@@ -19,6 +18,7 @@ export class ManagerQuestionsService {
   private readonly baseUrl: string
   constructor(
     private readonly managerQuestionsRepository: ManagerQuestionsRepository,
+    // @InjectQueue('image-queue') private readonly imageQueue: Queue,
     private readonly configService: ConfigService
   ) {
     this.baseUrl = configService.get<string>('APP_URL')

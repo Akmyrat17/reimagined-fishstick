@@ -10,9 +10,10 @@ export class ManagerTagsMapper {
         entity.name_ru = dto.name_ru
         entity.name_en = dto.name_en
         entity.name_tk = dto.name_tk
+        entity.desc_ru = dto.desc_ru
+        entity.desc_tk = dto.desc_tk
         entity.desc_en = dto.desc_en
-        entity.desc_en = dto.desc_en
-        entity.desc_en = dto.desc_en
+        entity.slug = makeSlug(entity.name_en)
         return entity
     }
 
@@ -30,13 +31,25 @@ export class ManagerTagsMapper {
         return entity
     }
 
-    public static toResponse(entity:TagsEntity,lang:LangEnum) {
+    public static toResponse(entity:TagsEntity) {
+        const dto = new TagsResponseDto()
+        dto.id = entity.id
+        dto.name_en = entity.name_en
+        dto.name_ru = entity.name_ru
+        dto.name_tk = entity.name_tk
+        dto.desc_en = entity.desc_en
+        dto.desc_ru = entity.desc_ru
+        dto.desc_tk = entity.desc_tk
+        dto.slug = entity.slug
+        return dto
+    }
+
+    public static toResponseSimple(entity:TagsEntity,lang:LangEnum) {
         const dto = new TagsResponseDto()
         dto.id = entity.id
         dto.name = entity[`name_${lang}`]
         dto.desc = entity[`desc_${lang}`]
         dto.slug = entity.slug
-        dto.total_used_in_questions = entity.questions.length
         return dto
     }
 }

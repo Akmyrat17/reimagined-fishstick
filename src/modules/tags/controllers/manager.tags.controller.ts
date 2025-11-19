@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Param, ParseIntPipe, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Headers, Param, ParseIntPipe, Patch, Post, Query } from "@nestjs/common";
 import { ManagerTagsService } from "../services/manager.tags.service";
 import { TagsCreateDto } from "../dtos/create-tags.dto";
 import { TagsUpdateDto } from "../dtos/update-tags.dto";
@@ -24,8 +24,13 @@ export class ManagerTagsController{
         return await this.managerTagsService.getAll(dto,lang)
     }
 
-    @Get(":id")
-    async getOne(@Param("id",ParseIntPipe) id:number){
-        return await this.managerTagsService.getOne(id)
+    @Delete(":id")
+    async delete(@Param('id',ParseIntPipe) id:number){
+        return await this.managerTagsService.delete(id)
     }
+
+    // @Get(":id")
+    // async getOne(@Param("id",ParseIntPipe) id:number){
+    //     return await this.managerTagsService.getOne(id)
+    // }
 }

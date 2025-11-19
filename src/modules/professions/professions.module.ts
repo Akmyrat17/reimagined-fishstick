@@ -6,10 +6,11 @@ import { ProfessionsService } from "./services/professions.service";
 import { ProfessionsRepository } from "./repositories/professions.repository";
 import { ManagerProfessionsService } from "./services/manager.professions.service";
 import { ManagerProfessionsRepository } from "./repositories/manager.professions.repository";
+import { ManagerProfessionsController } from "./controllers/manager.professions.controller";
 
 @Module({
     imports:[TypeOrmModule.forFeature([ProfessionsEntity])],
-    controllers:[ProfessionsController],
+    controllers:[ProfessionsController,ManagerProfessionsController],
     providers:[ProfessionsService,ProfessionsRepository,ManagerProfessionsService,ManagerProfessionsRepository]
 })
 export class ProfessionsModule {}

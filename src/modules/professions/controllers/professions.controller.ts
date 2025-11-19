@@ -3,7 +3,7 @@ import { PaginationRequestDto } from "src/common/dto/pagination.request.dto";
 import { LangEnum } from "src/common/enums";
 import { ProfessionsService } from "../services/professions.service";
 
-@Controller({ path: "tags" })
+@Controller({ path: "professions" })
 export class ProfessionsController {
     constructor(private readonly professionsService: ProfessionsService) { }
     @Get()

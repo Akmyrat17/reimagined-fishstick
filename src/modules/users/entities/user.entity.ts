@@ -6,6 +6,7 @@ import { QuestionsEntity } from 'src/modules/questions/entities/questions.entity
 import { ProfessionsEntity } from 'src/modules/professions/entities/professions.entity';
 import { ManyToMany, JoinTable } from 'typeorm';
 import { TagsEntity } from 'src/modules/tags/entities/tags.entity';
+import { AnswersEntity } from 'src/modules/answers/entites/answers.entity';
 
 @Entity({ name: 'users' })
 export class UsersEntity extends BaseEntity {
@@ -40,17 +41,21 @@ export class UsersEntity extends BaseEntity {
   @OneToMany(() => QuestionsEntity, (event) => event.asked_by)
   questions: QuestionsEntity[]
 
+  @OneToMany(()=> AnswersEntity,(event) => event.answered_by)
+  answers:AnswersEntity[]
+
   @ManyToOne(() => ProfessionsEntity, (event) => event.id)
   @JoinColumn({ name: "profession_id", referencedColumnName: "id" })
   profession: ProfessionsEntity
 
-  @ManyToMany(() => TagsEntity, (event) => event.users)
+  @ManyToMany(() => TagsEntity, (event) => event.users,{onDelete:"CASCADE"})
   @JoinTable({
     name: "user_tags",
     joinColumn: { name: "user_id", referencedColumnName: "id" },
     inverseJoinColumn: { name: "tag_id", referencedColumnName: "id" },
   })
   tags: TagsEntity[]
+  
   constructor(init?: Partial<UsersEntity>) {
     super()
     Object.assign(this, init)

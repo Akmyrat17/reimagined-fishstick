@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Query,
+  Headers,
 } from '@nestjs/common';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
@@ -15,6 +16,7 @@ import { PaginationRequestDto } from 'src/common/dto/pagination.request.dto';
 import { AdminGuard } from 'src/common/guards/admin.guard';
 import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/modules/auth/jwt/jwt-auth.guard';
+import { LangEnum } from 'src/common/enums';
 
 @Controller({
   path: "manager/users",
@@ -38,8 +40,8 @@ export class ManagerUsersController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.managerUsersService.findOne(+id);
+  findOne(@Param('id') id: string,@Headers('lang') lang:LangEnum) {
+    return this.managerUsersService.findOne(+id,lang);
   }
 
   @Patch(':id')

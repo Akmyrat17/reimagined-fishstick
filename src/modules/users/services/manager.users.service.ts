@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
-import { RolesEnum } from 'src/common/enums';
+import { LangEnum, RolesEnum } from 'src/common/enums';
 import { ManagerUsersRepository } from '../repositories/manager.users.repository';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
@@ -7,6 +7,7 @@ import * as bcrypt from 'bcrypt';
 import { PaginationRequestDto } from 'src/common/dto/pagination.request.dto';
 import { PaginationResponse } from 'src/common/dto/pagination.response.dto';
 import { UsersMapper } from '../mappers';
+import { ManagerUsersMapper } from '../mappers/manager.users.mapper';
 
 @Injectable()
 export class ManagerUsersService {
@@ -15,8 +16,8 @@ export class ManagerUsersService {
     try {
       const existingUser = await this.managerUsersRepository.findOne({ where: { fullname: createUserDto.fullname } })
       if (existingUser) throw new ConflictException(`Username '${createUserDto.fullname}' already exists`)
-      const existingPhone = await this.managerUsersRepository.findOne({ where: { phone_number: createUserDto.phone_number } });
-      if (existingPhone) throw new ConflictException(`Phone number '${createUserDto.phone_number}' already exists`)
+      const existingPhone = await this.managerUsersRepository.findOne({ where: { email: createUserDto.email } });
+      if (existingPhone) throw new ConflictException(`Phone number '${createUserDto.email}' already exists`)
       const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
       const user = this.managerUsersRepository.create({ ...createUserDto, password: hashedPassword, role: createUserDto.role || RolesEnum.USER });
       return await user.save();
@@ -30,16 +31,16 @@ export class ManagerUsersService {
     return new PaginationResponse(data, total, paginationDto.page, paginationDto.limit);
   }
 
-  async findOne(id: number) {
+  async findOne(id: number,lang:LangEnum) {
     const user = await this.managerUsersRepository.findOne({ where: { id } });
     if (!user) throw new NotFoundException(`User with ID ${id} not found`);
-    return user
+    return ManagerUsersMapper.responseOne(user,lang)
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
     const existingUser = await this.managerUsersRepository.findOne({ where: { id } });
     if (!existingUser) throw new NotFoundException(`User with ID ${id} not found`);
-    const mapped = UsersMapper.toUpdate(updateUserDto, id)
+    const mapped = ManagerUsersMapper.toUpdate(updateUserDto, id)
     if (updateUserDto.password) mapped.password = await bcrypt.hash(updateUserDto.password, 10);
     return await this.managerUsersRepository.save(mapped)
   }

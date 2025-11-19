@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import typeormConfig from './config/typeorm';
 import { CacheModule } from '@nestjs/cache-manager';
 import KeyvRedis from '@keyv/redis';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
@@ -38,6 +39,20 @@ import KeyvRedis from '@keyv/redis';
       },
       isGlobal: true
     }),
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => {
+        const redisHost = configService.get('REDIS_HOST')
+        const redisPort = configService.get('REDIS_PORT')
+        if (!redisHost || !redisPort) throw new Error('Cache config not found')
+        return {
+          connection: {
+            host: redisHost,
+            port: redisPort,
+          },
+        };
+      },
+    })
   ],
 })
 export class AppModule implements NestModule {

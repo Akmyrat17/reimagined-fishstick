@@ -12,9 +12,9 @@ import { BullModule } from '@nestjs/bullmq';
 @Module({
     imports: [
         TypeOrmModule.forFeature([QuestionsEntity]),
-        BullModule.registerQueue({
-            name: 'image-queue'
-        })
+        // BullModule.registerQueue({
+        //     name: 'image-queue'
+        // })
     ],
     controllers: [ManagerQuestionsController,QuestionsController],
     providers: [ManagerQuestionsService,QuestionsService,ManagerQuestionsRepository,QuestionsRepository],

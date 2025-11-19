@@ -28,9 +28,8 @@ export class ManagerAnswersController {
     constructor(private readonly managerAnswersService: ManagerAnswersService) { }
 
     @Post()
-    @UseInterceptors(FileInterceptor('image', { storage: multer.memoryStorage() }))
-    async create(@Body() dto:AnswersCreateDto, @UploadedFile() file?: Express.Multer.File) {
-        return this.managerAnswersService.create(dto, file);
+    async create(@Body() dto:AnswersCreateDto) {
+        return this.managerAnswersService.create(dto);
     }
 
     @Get()
@@ -44,9 +43,8 @@ export class ManagerAnswersController {
     }
 
     @Patch(':id')
-    @UseInterceptors(FileInterceptor('image', { storage: multer.memoryStorage() }))
-    async update(@Param('id', ParseIntPipe) id: number, @Body() dto: AnswersUpdateDto, @UploadedFile() file?: Express.Multer.File) {
-        return this.managerAnswersService.update(dto,id,file)
+    async update(@Param('id', ParseIntPipe) id: number, @Body() dto: AnswersUpdateDto) {
+        return this.managerAnswersService.update(dto,id)
     }
 
     @Delete(':id')

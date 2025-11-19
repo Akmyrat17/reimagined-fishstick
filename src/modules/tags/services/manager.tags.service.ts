@@ -26,13 +26,23 @@ export class ManagerTagsService {
 
     async getAll(dto:PaginationRequestDto,lang:LangEnum) {
         const [entities,total] =await this.managerTagsRepository.getAll(dto,lang)
-        const mapped = entities.map(e=>ManagerTagsMapper.toResponse(e,lang))
+        const mapped = entities.map(e=>ManagerTagsMapper.toResponse(e))
         return new PaginationResponse<TagsResponseDto>(mapped,total,dto.page,dto.limit)
     }
 
-    async getOne (id:number) {
-        const entity = await this.managerTagsRepository.findOneBy({id})
-        if(!entity) throw new NotFoundException()
-        return entity
-    }
+    async delete(id:number){
+        try {
+            const entity = await this.managerTagsRepository.findOne({where:{id}})
+        if(!entity) throw new NotFoundException("Tag not found")
+        return await this.managerTagsRepository.remove(entity)
+
+        } catch (error) {
+            console.log(error)
+            
+        }    }
+    // async getOne (id:number) {
+    //     const entity = await this.managerTagsRepository.findOneBy({id})
+    //     if(!entity) throw new NotFoundException()
+    //     return entity
+    // }
 }
