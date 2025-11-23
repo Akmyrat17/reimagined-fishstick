@@ -17,6 +17,7 @@ import { QuestionsUpdateDto } from '../dtos/update-questions.dto';
 import { QuestionsService } from '../services/questions.service';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { OptionalJwtAuthGuard } from 'src/modules/auth/jwt/optional.jwt-auth.guard';
+import { QuestionsQueryDto } from '../dtos/query-questions.dto';
 
 @Controller({ path: 'questions' })
 export class QuestionsController {
@@ -30,12 +31,13 @@ export class QuestionsController {
 
     @Get()
     @UseGuards(OptionalJwtAuthGuard)
-    async findAll(@Query() paginationQuery: PaginationRequestDto,@CurrentUser('id') userId?:number) {
-        return this.questionsService.getAll(paginationQuery,userId);
+    async findAll(@Query() query:QuestionsQueryDto,@CurrentUser('id') userId?:number) {
+        return this.questionsService.getAll(query,userId);
     }
 
     @Get(':slug')
-    async findOne(@Param('slug') slug: string,@CurrentUser('id',ParseIntPipe) userId:number) {
+    @UseGuards(OptionalJwtAuthGuard)
+    async findOne(@Param('slug') slug: string,@CurrentUser('id') userId?:number) {
         return this.questionsService.getOne(slug,userId);
     }
 

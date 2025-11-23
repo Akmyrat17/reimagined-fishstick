@@ -30,8 +30,25 @@ export class QuestionsEntity extends BaseEntity {
     @Column({ type: "enum", nullable: false, default: QuestionsPriorityEnum.LOW, enum: QuestionsPriorityEnum })
     priority: QuestionsPriorityEnum
 
-    @Column({type:"text",nullable:true})
+    @Column({ type: "text", nullable: true })
     reported_reason: string
+
+    @Column({type:"boolean",default:false})
+    in_review:boolean
+    
+    @ManyToMany(()=>UsersEntity,(event)=>event.questions_seen,{onDelete:'CASCADE'})
+    @JoinTable({
+        name:'questions_seen',
+        joinColumn:{
+            name:"question_id",
+            referencedColumnName:"id"
+        },
+        inverseJoinColumn:{
+            name:'user_id',
+            referencedColumnName:"id"
+        }
+    })
+    seen: UsersEntity[]
 
     @OneToMany(() => AnswersEntity, (event) => event.answered_to)
     answers: AnswersEntity[]
@@ -43,7 +60,7 @@ export class QuestionsEntity extends BaseEntity {
     @ManyToMany(() => ClientsEntity, (event) => event.id, { onDelete: "CASCADE" })
     recommended: ClientsEntity[]
 
-    @ManyToMany(() => TagsEntity, (event) => event.questions,{onDelete:"CASCADE"})
+    @ManyToMany(() => TagsEntity, (event) => event.questions, { onDelete: "CASCADE" })
     @JoinTable({
         name: "question_tags",
         joinColumn: {

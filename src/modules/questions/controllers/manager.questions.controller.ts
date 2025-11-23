@@ -49,6 +49,11 @@ export class ManagerQuestionsController {
         return this.managerQuestionsService.update(dto,id)
     }
 
+    @Patch('in-review/:id')
+    async setInReviewFalse(@Param('id',ParseIntPipe) id:number){
+        return await this.managerQuestionsService.toggleInReviewFalse(id)
+    }
+
     @Delete(':id')
     async remove(@Param('id', ParseIntPipe) id: number) {
         return await this.managerQuestionsService.remove(id)

@@ -12,7 +12,7 @@ export class ManagerQuestionsRepository extends Repository<QuestionsEntity> {
     async findAll(dto: QuestionsQueryDto) {
         const query = this.createQueryBuilder('questions')
             .leftJoin('questions.asked_by','asked_by')
-            .select(['questions.id', 'questions.slug', 'questions.priority','questions.special','questions.check_status','questions.title','questions.content'])
+            .select(['questions.id', 'questions.slug','questions.in_review', 'questions.priority','questions.special','questions.check_status','questions.title','questions.content'])
             .addSelect(['asked_by.id','asked_by.fullname'])
         if (dto.keyword && dto.keyword != '') {
             query.where(`questions.title ILIKE :keyword`, { keyword: `%${dto.keyword}%` })

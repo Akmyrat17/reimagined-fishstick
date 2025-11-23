@@ -39,6 +39,20 @@ export class QuestionsMapper {
         return dto
     }
 
+    public static toResponseRaw(entity:any,userId:number){
+        const dto = new QuestionsResponseDto()
+        dto.file_path = entity.questions_id
+        dto.priority = entity.questions_priority
+        dto.slug = entity.questions_slug
+        dto.special = entity.questions_special
+        dto.title = entity.questions_title
+        dto.asked_by = new UsersEntity({id:entity.asked_by_id,fullname:entity.asked_by_fullname})
+        dto.mine = entity.asked_by_id === userId
+        dto.seen = entity.seen
+        dto.answers_count = entity.answers_count
+        return dto
+    }
+
     public static toResponseDetail(entity:QuestionsEntity,userId:number) {
         const dto = new QuestionsResponseDto
         dto.file_path = entity.file_path

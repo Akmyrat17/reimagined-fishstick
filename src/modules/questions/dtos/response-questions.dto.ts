@@ -12,5 +12,8 @@ export class QuestionsResponseDto {
     asked_by:UsersEntity
     check_status:CheckStatusEnum
     special:Date
+    seen:number
+    in_review:boolean
+    answers_count:number
     mine:boolean
 }

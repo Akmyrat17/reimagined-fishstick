@@ -44,7 +44,10 @@ export class UsersEntity extends BaseEntity {
   @OneToMany(()=> AnswersEntity,(event) => event.answered_by)
   answers:AnswersEntity[]
 
-  @ManyToOne(() => ProfessionsEntity, (event) => event.id)
+  @ManyToMany(()=>QuestionsEntity,(event)=> event.seen,{onDelete:"CASCADE"})
+  questions_seen:QuestionsEntity[]
+
+  @ManyToOne(() => ProfessionsEntity, (event) => event.id,{onDelete:'SET NULL'})
   @JoinColumn({ name: "profession_id", referencedColumnName: "id" })
   profession: ProfessionsEntity
 

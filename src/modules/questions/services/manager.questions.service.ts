@@ -39,12 +39,20 @@ export class ManagerQuestionsService {
     return await this.managerQuestionsRepository.save(mapped);
   }
 
+  async toggleInReviewTrue(id:number){
+    return await this.managerQuestionsRepository.update(id,{in_review:true})
+  }
+
+    async toggleInReviewFalse(id:number){
+    return await this.managerQuestionsRepository.update(id,{in_review:false})
+  }
+
   async getAll(dto: QuestionsQueryDto) {
     const [entities, total] =
       await this.managerQuestionsRepository.findAll(dto);
     const mapped = entities.map((entity) => {
       const dto = ManagerQuestionsMapper.toResponseSimple(entity)
-      dto.content = ImageHelper.prependBaseUrl(dto.content,this.baseUrl)
+      // dto.content = ImageHelper.prependBaseUrl(dto.content,this.baseUrl)
       return dto
     })
     return new PaginationResponse<QuestionsResponseDto>(mapped, total, dto.page, dto.limit)
@@ -54,6 +62,7 @@ export class ManagerQuestionsService {
     const entity = await this.managerQuestionsRepository.getOne(id)
     if (!entity) throw new NotFoundException()
     const mapped = ManagerQuestionsMapper.toResponseDetail(entity)
+    await this.toggleInReviewTrue(id)
     mapped.content = ImageHelper.prependBaseUrl(mapped.content,this.baseUrl)
     return mapped
   }

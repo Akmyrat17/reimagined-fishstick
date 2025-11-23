@@ -11,6 +11,7 @@ import { PaginationResponse } from 'src/common/dto/pagination.response.dto';
 import { QuestionsResponseDto } from '../dtos/response-questions.dto';
 import { QuestionsRepository } from '../repositories/questions.repository';
 import { QuestionsMapper } from '../mappers/questions.mapper';
+import { QuestionsQueryDto } from '../dtos/query-questions.dto';
 
 @Injectable()
 export class QuestionsService {
@@ -41,16 +42,22 @@ export class QuestionsService {
     }
 
 
-    async getAll(dto: PaginationRequestDto,userId:number) {
-        const [entities, total] =
-            await this.questionsRepository.findAll(dto);
-        const mapped = entities.map((entity) => QuestionsMapper.toResponseSimple(entity,userId))
-        return new PaginationResponse<QuestionsResponseDto>(mapped, total, dto.page, dto.limit)
+    async getAll(dto:QuestionsQueryDto,userId:number) {
+        try {
+            const [entities, total] =
+                await this.questionsRepository.findAll(dto);
+            const mapped = entities.map((entity) => QuestionsMapper.toResponseRaw(entity,userId))
+            return new PaginationResponse<QuestionsResponseDto>(mapped, total, dto.page, dto.limit)
+            
+        } catch (error) {
+            console.log(error)
+        }
     }
 
     async getOne(slug: string,userId:number) {
         const entity = await this.questionsRepository.getOne(slug)
         if (!entity) throw new NotFoundException()
+            await this.questionsRepository.increaseSeen(userId,entity.id)
         const mapped = QuestionsMapper.toResponseDetail(entity,userId)
         return mapped
     }
