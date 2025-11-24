@@ -7,6 +7,7 @@ import { ProfessionsEntity } from 'src/modules/professions/entities/professions.
 import { ManyToMany, JoinTable } from 'typeorm';
 import { TagsEntity } from 'src/modules/tags/entities/tags.entity';
 import { AnswersEntity } from 'src/modules/answers/entites/answers.entity';
+import { VotesEntity } from 'src/modules/votes/entities/votes.entity';
 
 @Entity({ name: 'users' })
 export class UsersEntity extends BaseEntity {
@@ -43,6 +44,9 @@ export class UsersEntity extends BaseEntity {
 
   @OneToMany(()=> AnswersEntity,(event) => event.answered_by)
   answers:AnswersEntity[]
+
+  @OneToMany(()=>VotesEntity,(event)=>event.vote)
+  votes:VotesEntity[]
 
   @ManyToMany(()=>QuestionsEntity,(event)=> event.seen,{onDelete:"CASCADE"})
   questions_seen:QuestionsEntity[]

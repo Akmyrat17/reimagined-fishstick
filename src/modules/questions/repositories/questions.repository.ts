@@ -4,6 +4,7 @@ import { QuestionsEntity } from '../entities/questions.entity';
 import { CheckStatusEnum } from 'src/common/enums/check-status.enum';
 import { QuestionsQueryDto } from '../dtos/query-questions.dto';
 import { QuestionsSortEnum } from 'src/common/enums/questions-sort.enum';
+import { VotesTypeEnum } from 'src/common/enums/votes-type.enum';
 
 @Injectable()
 export class QuestionsRepository extends Repository<QuestionsEntity> {
@@ -18,6 +19,7 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
             .leftJoin('questions.asked_by', 'asked_by')
             .leftJoin('questions.answers', 'answers') // for HAS_ANSWERED sorting
             .leftJoin('questions.seen', 'seen')
+            .leftJoin('votes','v','v.target_id = questions.id and v.type = :type',{type:VotesTypeEnum.QUESTIONS})
             .select([
                 'questions.id',
                 'questions.slug',
@@ -28,6 +30,7 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
             .addSelect(['asked_by.id', 'asked_by.fullname'])
             .addSelect('COUNT(answers.id)', 'answers_count')
             .addSelect('COUNT(seen.id)', 'seen')
+            .addSelect(['v.id as vote_id','v.vote as vote_vote','v.user_id as vote_user_id'])
         if (keyword) {
             query.where('questions.title LIKE :keyword', { keyword: `%${keyword}%` });
         }
@@ -67,11 +70,13 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
         const entities = await query
             .groupBy('questions.id')
             .addGroupBy('asked_by.id')
+            .addGroupBy('v.id')
             .orderBy('answers_count', 'DESC')
             .addOrderBy('seen', 'DESC')
             .take(limit)
             .skip((page - 1) * limit)
             .getRawMany();
+            console.log(entities)
         return [entities, count];
     }
 

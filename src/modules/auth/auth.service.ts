@@ -42,7 +42,7 @@ export class AuthService {
       const isMatch = await bcrypt.compare(password, result.password);
       if (!isMatch) throw new UnauthorizedException('Email or password is incorrect');
       const tokens = await this.generateTokens(result)
-      if(!result.is_verified) await this.sendVerificationToken(result.email)
+      // if(!result.is_verified) await this.sendVerificationToken(result.email)
       return {tokens,result}
     } catch (error) {
       console.log(error)    

@@ -6,8 +6,9 @@ import { AnswersModule } from './answers/answers.module';
 import { ClientsModule } from './clients/clients.module';
 import { ProfessionsModule } from './professions/professions.module';
 import { TagsModule } from './tags/tags.module';
+import { VotesModule } from './votes/votes.module';
 
 @Module({
-  imports: [UsersModule, AuthModule, QuestionsModule, AnswersModule, ClientsModule, ProfessionsModule, TagsModule]
+  imports: [UsersModule, AuthModule, QuestionsModule, AnswersModule, ClientsModule, ProfessionsModule, TagsModule,VotesModule]
 })
 export class AllModule { }
