@@ -17,7 +17,6 @@ export class ManagerQuestionsService {
   private readonly baseUrl: string
   constructor(
     private readonly managerQuestionsRepository: ManagerQuestionsRepository,
-    // @InjectQueue('image-queue') private readonly imageQueue: Queue,
     private readonly configService: ConfigService
   ) {
     this.baseUrl = configService.get<string>('APP_URL')
@@ -30,28 +29,23 @@ export class ManagerQuestionsService {
   }
 
   async update(dto: QuestionsUpdateDto, questionId: number): Promise<QuestionsEntity> {
-    const question = await this.managerQuestionsRepository.findOne({where: { id: questionId }});
+    const question = await this.managerQuestionsRepository.findOne({ where: { id: questionId } });
     if (!question) throw new NotFoundException();
     const mapped = ManagerQuestionsMapper.toUpdate(dto, questionId)
     return await this.managerQuestionsRepository.save(mapped);
   }
 
-  async toggleInReviewTrue(id:number){
-    return await this.managerQuestionsRepository.update(id,{in_review:true})
+  async toggleInReviewTrue(id: number) {
+    return await this.managerQuestionsRepository.update(id, { in_review: true })
   }
 
-    async toggleInReviewFalse(id:number){
-    return await this.managerQuestionsRepository.update(id,{in_review:false})
+  async toggleInReviewFalse(id: number) {
+    return await this.managerQuestionsRepository.update(id, { in_review: false })
   }
 
   async getAll(dto: QuestionsQueryDto) {
-    const [entities, total] =
-      await this.managerQuestionsRepository.findAll(dto);
-    const mapped = entities.map((entity) => {
-      const dto = ManagerQuestionsMapper.toResponseSimple(entity)
-      // dto.content = ImageHelper.prependBaseUrl(dto.content,this.baseUrl)
-      return dto
-    })
+    const [entities, total] = await this.managerQuestionsRepository.findAll(dto);
+    const mapped = entities.map((entity) => ManagerQuestionsMapper.toResponseSimple(entity))
     return new PaginationResponse<QuestionsResponseDto>(mapped, total, dto.page, dto.limit)
   }
 
@@ -64,14 +58,8 @@ export class ManagerQuestionsService {
   }
 
   async remove(id: number) {
-    try {
-      
-      const entity = await this.managerQuestionsRepository.findOne({where: { id }});
-      if (!entity) throw new NotFoundException();
-      return await this.managerQuestionsRepository.remove(entity);
-    } catch (error) {
-        console.log(error)
-
-    }
+    const entity = await this.managerQuestionsRepository.findOne({ where: { id } });
+    if (!entity) throw new NotFoundException();
+    return await this.managerQuestionsRepository.remove(entity);
   }
 }

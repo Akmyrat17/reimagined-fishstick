@@ -4,7 +4,7 @@ import { QuestionsPriorityEnum } from "src/common/enums/questions-priority.enum"
 import { UsersEntity } from "src/modules/users/entities/user.entity";
 import { CheckStatusEnum } from "src/common/enums/check-status.enum";
 import { AnswersEntity } from "src/modules/answers/entites/answers.entity";
-import { ClientsEntity } from "src/modules/business-profile/entities/business-profiles.entity";
+import { BusinessProfilesEntity } from "src/modules/business-profile/entities/business-profiles.entity";
 import { TagsEntity } from "src/modules/tags/entities/tags.entity";
 
 @Entity({ name: 'questions' })
@@ -57,8 +57,8 @@ export class QuestionsEntity extends BaseEntity {
     @JoinColumn({ name: 'asked_by' })
     asked_by: UsersEntity
 
-    @ManyToMany(() => ClientsEntity, (event) => event.recommended_to, { onDelete: "CASCADE" })
-    recommended: ClientsEntity[]
+    @ManyToMany(() => BusinessProfilesEntity, (event) => event.recommended_to, { onDelete: "CASCADE" })
+    recommended: BusinessProfilesEntity[]
 
     @ManyToMany(() => TagsEntity, (event) => event.questions, { onDelete: "CASCADE" })
     @JoinTable({

@@ -27,37 +27,31 @@ export class QuestionsController {
 
     @Post()
     @UseGuards(JwtAuthGuard)
-    async create(@Body() dto:QuestionsCreateDto,@CurrentUser('id',ParseIntPipe) userId:number) {
-        return this.questionsService.create(dto,userId);
+    async create(@Body() dto: QuestionsCreateDto, @CurrentUser('id', ParseIntPipe) userId: number) {
+        return this.questionsService.create(dto, userId);
     }
 
     @Get()
     @UseGuards(OptionalJwtAuthGuard)
-    async findAll(
-        @Query() query: QuestionsQueryDto,
-        @CurrentUser('id') userId?: number
-    ): Promise<PaginationResponse<QuestionsResponseDto>> {
-        return this.questionsService.getAll(query,userId);
+    async findAll(@Query() query: QuestionsQueryDto, @CurrentUser('id') userId?: number): Promise<PaginationResponse<QuestionsResponseDto>> {
+        return this.questionsService.getAll(query, userId);
     }
 
     @Get(':slug')
     @UseGuards(OptionalJwtAuthGuard)
-    async findOne(
-        @Param('slug') slug: string,
-        @CurrentUser('id') userId?: number
-    ): Promise<QuestionsResponseDto> {
-        return this.questionsService.getOne(slug,userId);
+    async findOne(@Param('slug') slug: string, @CurrentUser('id') userId?: number): Promise<QuestionsResponseDto> {
+        return this.questionsService.getOne(slug, userId);
     }
 
     @Patch(':id')
     @UseGuards(JwtAuthGuard)
-    async update(@Param('id', ParseIntPipe) id: number, @Body() dto: QuestionsUpdateDto, @CurrentUser('id',ParseIntPipe) userId:number) {
-        return this.questionsService.update(id,dto,userId)
+    async update(@Param('id', ParseIntPipe) id: number, @Body() dto: QuestionsUpdateDto, @CurrentUser('id', ParseIntPipe) userId: number) {
+        return this.questionsService.update(id, dto, userId)
     }
 
     @Delete(':id')
     @UseGuards(JwtAuthGuard)
-    async remove(@Param('id', ParseIntPipe) id: number,@CurrentUser('id',ParseIntPipe) userId:number) {
-        return await this.questionsService.remove(id,userId)
+    async remove(@Param('id', ParseIntPipe) id: number, @CurrentUser('id', ParseIntPipe) userId: number) {
+        return await this.questionsService.remove(id, userId)
     }
 }
