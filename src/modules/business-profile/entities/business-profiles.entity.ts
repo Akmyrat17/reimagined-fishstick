@@ -1,9 +1,10 @@
+import { CheckStatusEnum } from "src/common/enums/check-status.enum";
 import { BaseEntity } from "src/database/enitities/base.entity";
 import { QuestionsEntity } from "src/modules/questions/entities/questions.entity";
 import { Column, Entity, JoinTable, ManyToMany } from "typeorm";
 
-@Entity({ name: "clients" })
-export class ClientsEntity extends BaseEntity {
+@Entity({ name: "business_profiles" })
+export class BusinessProfilesEntity extends BaseEntity {
     @Column({ nullable: false, type: "text" })
     company_name: string
 
@@ -19,6 +20,15 @@ export class ClientsEntity extends BaseEntity {
     @Column({ type: "int", nullable: false })
     phone_number: number
 
+    @Column({type:'enum',enum:CheckStatusEnum,default:CheckStatusEnum.NOT_CHECKED})
+    check_status:CheckStatusEnum
+    
+    @Column({type:"decimal",default:0})
+    longitude:number
+
+    @Column({type:"decimal",default:0})
+    latitude:number
+
     @Column({type:"text",nullable:true})
     web_url:string
 
@@ -31,7 +41,7 @@ export class ClientsEntity extends BaseEntity {
     @Column({type:"boolean",nullable:false,default:false})
     is_active:boolean
 
-    @ManyToMany(()=>QuestionsEntity,(event)=>event.id,{onDelete:"CASCADE"})
+    @ManyToMany(()=>QuestionsEntity,(event)=>event.recommended,{onDelete:"CASCADE"})
     @JoinTable({
         name:"questions_clients",
         joinColumn:{
@@ -45,7 +55,7 @@ export class ClientsEntity extends BaseEntity {
     })
     recommended_to:QuestionsEntity[]
 
-    constructor(init?:Partial<ClientsEntity>){
+    constructor(init?:Partial<BusinessProfilesEntity>){
         super()
         Object.assign(this,init)
     }

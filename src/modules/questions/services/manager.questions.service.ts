@@ -3,7 +3,6 @@ import { ManagerQuestionsRepository } from '../repositories/manager.questions.re
 import { QuestionsCreateDto } from '../dtos/create-questions.dto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { ImageHelper } from 'src/common/utils/image.helper';
 import { makeSlug } from 'src/common/utils/slug.helper';
 import { ManagerQuestionsMapper } from '../mappers/manager.questions.mapper';
 import { QuestionsEntity } from '../entities/questions.entity';
@@ -27,8 +26,6 @@ export class ManagerQuestionsService {
   async create(dto: QuestionsCreateDto): Promise<QuestionsEntity> {
     const slug = makeSlug(dto.title);
     const mapped = ManagerQuestionsMapper.toCreate(dto, slug);
-    const updatedContent = await ImageHelper.processImagesFromContent(dto.content)
-    mapped.content = updatedContent
     return await this.managerQuestionsRepository.save(mapped);
   }
 
@@ -63,14 +60,18 @@ export class ManagerQuestionsService {
     if (!entity) throw new NotFoundException()
     const mapped = ManagerQuestionsMapper.toResponseDetail(entity)
     await this.toggleInReviewTrue(id)
-    mapped.content = ImageHelper.prependBaseUrl(mapped.content,this.baseUrl)
     return mapped
   }
 
   async remove(id: number) {
-    const entity = await this.managerQuestionsRepository.findOne({where: { id }});
-    if (!entity) throw new NotFoundException();
-    await ImageHelper.deleteImagesFromContent(entity.content)
-    return await this.managerQuestionsRepository.remove(entity);
+    try {
+      
+      const entity = await this.managerQuestionsRepository.findOne({where: { id }});
+      if (!entity) throw new NotFoundException();
+      return await this.managerQuestionsRepository.remove(entity);
+    } catch (error) {
+        console.log(error)
+
+    }
   }
 }

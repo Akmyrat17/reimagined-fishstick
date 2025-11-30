@@ -1,4 +1,6 @@
-export class ClientsResponseDto{
+import { CheckStatusEnum } from "src/common/enums/check-status.enum"
+
+export class BusinessProfilesResponseDto{
     id:number
     company_name:string
     description:string
@@ -8,4 +10,7 @@ export class ClientsResponseDto{
     file_paths:string[]
     subscription_date:Date
     is_active:boolean
+    longitude:number
+    check_status:CheckStatusEnum
+    latitude:number
 }

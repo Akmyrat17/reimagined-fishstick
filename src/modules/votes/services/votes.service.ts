@@ -7,16 +7,41 @@ import { VotesToggleDto } from "../dtos/toggle-votes.dto";
 @Injectable()
 export class VotesService {
     constructor(private readonly votesRepository:VotesRepository) {    }
-
-    async toggleVote(userId:number,dto:VotesToggleDto){
-        const vote = await this.votesRepository.findOne({where:{user:{id:userId},target_id:dto.target_id,type:dto.type}})
-        if(vote) {
-            await this.votesRepository.delete({id:vote.id})
-            if(vote.vote === dto.vote) return
+async toggleVote(userId: number, dto: VotesToggleDto) {
+    return await this.votesRepository.manager.transaction(async (manager) => {
+        const votesRepo = manager.getRepository(VotesEntity);
+        
+        const existingVote = await votesRepo.findOne({
+            where: { 
+                user: { id: userId }, 
+                target_id: dto.target_id, 
+                type: dto.type 
+            }
+        });
+        
+        if (existingVote) {
+            // Toggle off: remove vote
+            if (existingVote.vote === dto.vote) {
+                await votesRepo.remove(existingVote);
+                return { deleted: true };
+            }
+            
+            // Change vote: update
+            existingVote.vote = dto.vote;
+            return await votesRepo.save(existingVote);
         }
-        const newCreated = new VotesEntity({user:new UsersEntity({id:userId}),target_id:dto.target_id,type:dto.type,vote:dto.vote})
-        return await this.votesRepository.save(newCreated)
-    }
+        
+        // Create new vote
+        const newVote = votesRepo.create({
+            user: { id: userId },
+            target_id: dto.target_id,
+            type: dto.type,
+            vote: dto.vote
+        });
+        
+        return await votesRepo.save(newVote);
+    });
+}
 
     // async getVotes(userId:number,dto:)
 }

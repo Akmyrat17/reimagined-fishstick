@@ -10,7 +10,7 @@ export class UsersRepository extends Repository<UsersEntity> {
   }
   async getUserByEmail(email:string){
     return await this.createQueryBuilder('users')
-    .select(['users.id','users.email','users.password','users.is_verified'])
+    .select(['users.id','users.email','users.password','users.is_verified','users.fullname'])
     .where('users.email = :email', { email })
     .getOne();
   }

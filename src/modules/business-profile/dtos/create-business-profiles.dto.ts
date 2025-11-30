@@ -1,7 +1,8 @@
+import { Transform } from "class-transformer";
 import { IsDate, IsNotEmpty, IsNumber, IsOptional, IsString, IsUrl, Max, Min } from "class-validator";
 
-export class ClientsUpdateDto {
-    @IsOptional()
+export class BusinessProfilesCreateDto {
+    @IsNotEmpty()
     @IsString()
     company_name:string
 
@@ -9,15 +10,25 @@ export class ClientsUpdateDto {
     @IsString()
     description:string
     
-    @IsOptional()
+    @IsNotEmpty()
     @IsString()
     location:string
 
-    @IsOptional()
+    @IsNotEmpty()
     @IsNumber()
     @Min(61000000)
     @Max(65999999)
     phone_number:number
+
+    @IsNotEmpty()
+    @IsNumber()
+    @Transform(({value})=>value ? parseFloat(value) : 0)
+    longitude:number
+
+    @IsNotEmpty()
+    @IsNumber()
+    @Transform(({value})=>value ? parseFloat(value) : 0)
+    latitude:number
 
     @IsOptional()
     @IsUrl()

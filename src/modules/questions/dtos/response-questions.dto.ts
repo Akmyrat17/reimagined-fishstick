@@ -16,4 +16,10 @@ export class QuestionsResponseDto {
     in_review:boolean
     answers_count:number
     mine:boolean
+    created_at:Date
+    updated_at:Date
+    total_votes_count:number
+    upvotes_count:number
+    downvotes_count:number
+    current_user_vote:number
 }

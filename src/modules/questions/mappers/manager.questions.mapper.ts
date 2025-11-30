@@ -3,7 +3,6 @@ import { QuestionsCreateDto } from "../dtos/create-questions.dto";
 import { QuestionsEntity } from "../entities/questions.entity";
 import { QuestionsUpdateDto } from "../dtos/update-questions.dto";
 import { QuestionsResponseDto } from "../dtos/response-questions.dto";
-import { makeSlug } from "src/common/utils/slug.helper";
 import { CheckStatusEnum } from "src/common/enums/check-status.enum";
 
 export class ManagerQuestionsMapper {
@@ -27,13 +26,14 @@ export class ManagerQuestionsMapper {
         }
         if (dto.priority) entity.priority = dto.priority
         if (dto.special) entity.special = dto.special
-        console.log(entity, 'entity')
         return entity
     }
 
     public static toResponseSimple(entity: QuestionsEntity) {
         const dto = new QuestionsResponseDto
         dto.id = entity.id
+        dto.created_at = entity.created_at
+        dto.updated_at = entity.updated_at
         dto.file_path = entity.file_path
         dto.priority = entity.priority
         dto.slug = entity.slug

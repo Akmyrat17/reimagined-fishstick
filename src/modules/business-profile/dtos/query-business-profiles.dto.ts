@@ -1,7 +1,7 @@
 import { IsBoolean, IsDate, IsNumber, IsOptional, Max, Min } from "class-validator";
 import { PaginationRequestDto } from "src/common/dto/pagination.request.dto";
 
-export class ClientsQueryDto extends PaginationRequestDto {
+export class BusinessProfilesQueryDto extends PaginationRequestDto {
     @IsBoolean()
     @IsOptional()
     is_active:boolean

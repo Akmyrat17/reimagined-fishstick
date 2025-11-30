@@ -50,6 +50,11 @@ export class QuestionsMapper {
         dto.mine = entity.asked_by_id === userId
         dto.seen = entity.seen
         dto.answers_count = entity.answers_count
+        dto.total_votes_count = entity.total_votes_count
+        dto.created_at = entity.questions_created_at
+        dto.upvotes_count = entity.upvotes_count
+        dto.downvotes_count = entity.downvotes_count
+        dto.current_user_vote = entity.current_user_vote
         return dto
     }
 

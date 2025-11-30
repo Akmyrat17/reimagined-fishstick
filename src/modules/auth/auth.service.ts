@@ -38,7 +38,6 @@ export class AuthService {
     try {
       const result = await this.usersRepository.getUserByEmail(email);
       if(!result) throw new NotFoundException("Email or password is incorrect")
-        console.log(result)
       const isMatch = await bcrypt.compare(password, result.password);
       if (!isMatch) throw new UnauthorizedException('Email or password is incorrect');
       const tokens = await this.generateTokens(result)
@@ -74,7 +73,9 @@ export class AuthService {
   }
 
   async generateTokens(user: UsersEntity) {
+    console.log(user)
     const payload: JwtPayload = { id: user.id, fullname: user.fullname, };
+    console.log(payload)
     const accessToken = await this.jwtService.signAsync(payload, {secret: this.accesTokenSecret,    expiresIn: this.accesTokenTtl});
     const refreshToken = await this.jwtService.signAsync(payload, { secret: this.refreshTokenSecret,expiresIn: this.refreshTokenTtl,  });
     return { access_token: accessToken, refresh_token: refreshToken };

@@ -6,15 +6,9 @@ export const CurrentUser = createParamDecorator(
         const request = ctx.switchToHttp().getRequest();
         const user = request.user as UsersEntity;
         if (!user) return null;
-        
-        // 🚨 CORRECTED LINE: Access property directly without '$'
         if (data && user[data as keyof UsersEntity]) {
-            // Returns the property value (e.g., the number 1)
             return user[data as keyof UsersEntity]; 
         }
-
-        console.log('Full User:', user);
-        // Returns the full UsersEntity object if no data key is provided
         return user;
     },
 );

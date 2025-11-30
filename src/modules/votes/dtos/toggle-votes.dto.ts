@@ -5,12 +5,12 @@ import { VotesTypeEnum } from "src/common/enums/votes-type.enum";
 export class VotesToggleDto {
     @IsNotEmpty()
     @IsNumber()
-    @Transform(({ value }) => value ? parseInt(value) : 1)
+    @Transform(({ value }) => value ? parseInt(value) : 0)
     vote: number
 
     @IsNotEmpty()
     @IsNumber()
-    @Transform(({ value }) => value ? parseInt(value) : 1)
+    @Transform(({ value }) => value ? parseInt(value) : null)
     target_id: number
 
     @IsNotEmpty()

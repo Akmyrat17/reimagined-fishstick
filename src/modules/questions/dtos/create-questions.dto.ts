@@ -1,6 +1,5 @@
-import { IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import {  IsArray, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 import { QuestionsPriorityEnum } from 'src/common/enums';
-import { CheckStatusEnum } from 'src/common/enums/check-status.enum';
 
 export class QuestionsCreateDto {
   @IsString()
@@ -14,6 +13,14 @@ export class QuestionsCreateDto {
   @IsString()
   @IsNotEmpty()
   content: string;
+
+  @IsOptional()
+  @IsArray()
+  image_urls: string[];
+
+  @IsArray()
+  @IsOptional()
+  tag_ids:number[]
 
   @IsOptional()
   @IsEnum(QuestionsPriorityEnum)

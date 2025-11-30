@@ -1,71 +1,83 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { QuestionsCreateDto } from '../dtos/create-questions.dto';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
-import { ImageHelper } from 'src/common/utils/image.helper';
-import { makeSlug } from 'src/common/utils/slug.helper';
-import { QuestionsEntity } from '../entities/questions.entity';
-import { QuestionsUpdateDto } from '../dtos/update-questions.dto';
-import { PaginationRequestDto } from 'src/common/dto/pagination.request.dto';
-import { PaginationResponse } from 'src/common/dto/pagination.response.dto';
-import { QuestionsResponseDto } from '../dtos/response-questions.dto';
+
+// src/modules/questions/services/questions.service.ts
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { QuestionsRepository } from '../repositories/questions.repository';
 import { QuestionsMapper } from '../mappers/questions.mapper';
+import { QuestionsCreateDto } from '../dtos/create-questions.dto';
+import { QuestionsUpdateDto } from '../dtos/update-questions.dto';
 import { QuestionsQueryDto } from '../dtos/query-questions.dto';
+import { QuestionsResponseDto } from '../dtos/response-questions.dto';
+import { PaginationResponse } from 'src/common/dto/pagination.response.dto';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class QuestionsService {
-    constructor(
-        private readonly questionsRepository: QuestionsRepository,
-        // @InjectQueue('image-queue') private readonly imageQueue: Queue,
-    ) { }
+  private readonly baseUrl: string;
 
-    async create(dto: QuestionsCreateDto, userId: number): Promise<QuestionsEntity> {
-        const updatedContent = await ImageHelper.processImagesFromContent(dto.content);
-        const mapped = QuestionsMapper.toCreate(dto, userId);
-        mapped.content = updatedContent;
-        return await this.questionsRepository.save(mapped);
+  constructor(
+    private readonly questionsRepository: QuestionsRepository,
+    private readonly configService: ConfigService
+  ) {
+    this.baseUrl = this.configService.get<string>('APP_URL');
+  }
+
+  async create(dto: QuestionsCreateDto, userId: number) :Promise<QuestionsResponseDto>{
+    // dto.content may be TipTap JSON or HTML. helper handles both.
+    const mapped = QuestionsMapper.toCreate(dto, userId);
+    const entity = await this.questionsRepository.save(mapped);
+    return QuestionsMapper.toResponseDetail(entity, userId);
+  }
+
+  async update(id: number, dto: QuestionsUpdateDto, userId: number): Promise<QuestionsResponseDto> {
+    const existing = await this.questionsRepository.findOne({ 
+      where: { 
+        id, 
+        asked_by: { id: userId } 
+      } 
+    });
+    
+    if (!existing) {
+      throw new NotFoundException('Question not found');
+    }
+    const mapped = QuestionsMapper.toUpdate(dto, id);
+    const entity = await this.questionsRepository.save(mapped);
+    return QuestionsMapper.toResponseDetail(entity, userId);
+  }
+
+  async getAll(dto: QuestionsQueryDto, userId?: number): Promise<PaginationResponse<QuestionsResponseDto>> {
+    const [entities, total] = await this.questionsRepository.findAll(dto, userId);
+    const items = entities.map(entity => {
+      const item = QuestionsMapper.toResponseSimple(entity, userId || 0);
+      return item;
+    });
+    return new PaginationResponse<QuestionsResponseDto>(items, total, dto.page, dto.limit);
+  }
+
+  async getOne(slug: string, userId?: number): Promise<QuestionsResponseDto> {
+    const entity = await this.questionsRepository.getOne(slug);
+    if (!entity) {
+      throw new NotFoundException('Question not found');
     }
 
-    async update(id: number, dto: QuestionsUpdateDto, userId: number): Promise<QuestionsEntity> {
-        const existing = await this.questionsRepository.findOne({ where: { id, asked_by: { id: userId } } });
-        if (!existing) throw new NotFoundException("Question not found");
-        if (dto.content) {
-            await ImageHelper.deleteImagesFromContent(existing.content);
-            const updatedContent = await ImageHelper.processImagesFromContent(dto.content);
-            const mapped = QuestionsMapper.toUpdate(dto, id)
-            mapped.content = updatedContent;
-            return await this.questionsRepository.save(mapped);
-        }
-        const mapped = QuestionsMapper.toUpdate(dto, id)
-        return await this.questionsRepository.save(mapped);
-    }
+    // Track that user has seen this question
+    if (userId)       await this.questionsRepository.increaseSeen(userId, entity.id);
+    const response = QuestionsMapper.toResponseDetail(entity, userId || 0);
+    return response;
+  }
 
-
-    async getAll(dto:QuestionsQueryDto,userId:number) {
-        try {
-            const [entities, total] =
-                await this.questionsRepository.findAll(dto);
-            const mapped = entities.map((entity) => QuestionsMapper.toResponseRaw(entity,userId))
-            return new PaginationResponse<QuestionsResponseDto>(mapped, total, dto.page, dto.limit)
-            
-        } catch (error) {
-            console.log(error)
-        }
+  async remove(id: number, userId: number): Promise<{ success: boolean; message: string }> {
+    const entity = await this.questionsRepository.findOne({ 
+      where: { 
+        id, 
+        asked_by: { id: userId } 
+      } 
+    });
+    
+    if (!entity) {
+      throw new ForbiddenException('You are not authorized to delete this question');
     }
-
-    async getOne(slug: string,userId:number) {
-        const entity = await this.questionsRepository.getOne(slug)
-        if (!entity) throw new NotFoundException()
-            await this.questionsRepository.increaseSeen(userId,entity.id)
-        const mapped = QuestionsMapper.toResponseDetail(entity,userId)
-        return mapped
-    }
-
-    async remove(id: number, userId: number) {
-        const entity = await this.questionsRepository.findOne({ where: { id, asked_by: { id: userId } } })
-        if (!entity) throw new ForbiddenException()
-        await ImageHelper.deleteImagesFromContent(entity.content);
-        return await this.questionsRepository.remove(entity)
-    }
+    await this.questionsRepository.remove(entity);
+    
+    return { success: true, message: 'Question deleted successfully' };
+  }
 }

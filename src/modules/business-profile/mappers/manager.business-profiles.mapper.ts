@@ -1,33 +1,39 @@
-import { ClientsCreateDto } from "../dtos/create-clients.dto";
-import { ClientsResponseDto } from "../dtos/response-clients.dto";
-import { ClientsUpdateDto } from "../dtos/update-clients.dto";
-import { ClientsEntity } from "../entities/clients.entity";
+import { BusinessProfilesCreateDto } from "../dtos/create-business-profiles.dto"
+import { BusinessProfilesResponseDto } from "../dtos/response-business-profiles.dto"
+import { BusinessProfilesUpdateDto } from "../dtos/update-business-profiles.dto"
+import { BusinessProfilesEntity } from "../entities/business-profiles.entity"
 
-export class ManagerClientsMapper {
-    public static toCreate(dto:ClientsCreateDto,filePaths:string[],slug:string){
-        const entity = new ClientsEntity()
+export class ManagerBusinessProfilesMapper {
+    public static toCreate(dto:BusinessProfilesCreateDto,filePaths:string[],slug:string){
+        const entity = new BusinessProfilesEntity()
         entity.company_name = dto.company_name
         entity.description = dto.description
         entity.file_paths = filePaths
         entity.location = dto.location
+        entity.latitude = dto.latitude
+        entity.longitude = dto.longitude
         entity.slug = slug
         entity.phone_number = dto.phone_number
         return entity
     }
 
-    public static toUpdate(dto:ClientsUpdateDto,id:number,slug:string,filePaths:string[]){
-        const entity = new ClientsEntity({id})
+    public static toUpdate(dto:BusinessProfilesUpdateDto,id:number,slug:string,filePaths:string[]){
+        console.log(dto)
+        const entity = new BusinessProfilesEntity({id})
         if(dto.company_name) entity.company_name = dto.company_name
         if(dto.description) entity.description = dto.description
         if(filePaths) entity.file_paths = filePaths
         if(dto.location) entity.location = dto.location
+        if (dto.latitude) entity.latitude = dto.latitude
+        if(dto.longitude) entity.longitude = dto.longitude
         entity.slug = slug
         if(dto.phone_number) entity.phone_number = dto.phone_number
+        console.log(entity)
         return entity
     }
 
-    public static toResponseSimple(entity:ClientsEntity){
-        const dto = new ClientsResponseDto()
+    public static toResponseSimple(entity:BusinessProfilesEntity){
+        const dto = new BusinessProfilesResponseDto()
         dto.id = entity.id
         dto.company_name = entity.company_name
         dto.subscription_date = entity.subscription_date
@@ -35,8 +41,8 @@ export class ManagerClientsMapper {
         return dto
     }
 
-    public static toResponseDetail(entity:ClientsEntity){
-        const dto = new ClientsResponseDto()
+    public static toResponseDetail(entity:BusinessProfilesEntity){
+        const dto = new BusinessProfilesResponseDto()
         dto.id = entity.id
         dto.company_name = entity.company_name
         dto.subscription_date = entity.subscription_date
