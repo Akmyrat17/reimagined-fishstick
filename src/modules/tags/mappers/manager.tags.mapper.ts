@@ -5,50 +5,29 @@ import { LangEnum } from "src/common/enums";
 import { TagsResponseDto } from "../dtos/response-tags.dto";
 
 export class ManagerTagsMapper {
-    public static toCreate(dto:TagsCreateDto) {
+    public static toCreate(dto: TagsCreateDto) {
         const entity = new TagsEntity()
-        entity.name_ru = dto.name_ru
-        entity.name_en = dto.name_en
-        entity.name_tk = dto.name_tk
-        entity.desc_ru = dto.desc_ru
-        entity.desc_tk = dto.desc_tk
-        entity.desc_en = dto.desc_en
-        entity.slug = makeSlug(entity.name_en)
+        entity.name = dto.name
+        entity.slug = makeSlug(dto.name)
+        entity.desc = dto.desc
         return entity
     }
 
-    public static toUpdate(dto:TagsCreateDto,id:number) {
-        const entity = new TagsEntity({id})
-        if(dto.name_en) {
-            entity.name_en = dto.name_en
-            entity.slug = makeSlug(dto.name_en)
+    public static toUpdate(dto: TagsCreateDto, id: number) {
+        const entity = new TagsEntity({ id })
+        if (dto.name) {
+            entity.name = dto.name
+            entity.slug = makeSlug(dto.name)
         }
-        if(dto.name_ru) entity.name_ru = dto.name_ru
-        if(dto.name_tk) entity.name_tk = dto.name_tk
-        if(dto.desc_ru) entity.desc_ru = dto.desc_ru
-        if(dto.desc_en) entity.desc_en = dto.desc_en
-        if(dto.desc_tk) entity.desc_tk = dto.desc_tk
+        if (dto.desc) entity.desc = dto.desc
         return entity
     }
 
-    public static toResponse(entity:TagsEntity) {
+    public static toResponse(entity: TagsEntity) {
         const dto = new TagsResponseDto()
         dto.id = entity.id
-        dto.name_en = entity.name_en
-        dto.name_ru = entity.name_ru
-        dto.name_tk = entity.name_tk
-        dto.desc_en = entity.desc_en
-        dto.desc_ru = entity.desc_ru
-        dto.desc_tk = entity.desc_tk
-        dto.slug = entity.slug
-        return dto
-    }
-
-    public static toResponseSimple(entity:TagsEntity,lang:LangEnum) {
-        const dto = new TagsResponseDto()
-        dto.id = entity.id
-        dto.name = entity[`name_${lang}`]
-        dto.desc = entity[`desc_${lang}`]
+        dto.name = entity.name
+        dto.desc = entity.desc
         dto.slug = entity.slug
         return dto
     }

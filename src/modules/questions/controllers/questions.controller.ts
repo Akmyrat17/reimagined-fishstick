@@ -9,8 +9,8 @@ import {
     ParseIntPipe,
     Patch,
     UseGuards,
+    Headers,
 } from '@nestjs/common';
-import { PaginationRequestDto } from 'src/common/dto/pagination.request.dto';
 import { JwtAuthGuard } from 'src/modules/auth/jwt/jwt-auth.guard';
 import { QuestionsCreateDto } from '../dtos/create-questions.dto';
 import { QuestionsUpdateDto } from '../dtos/update-questions.dto';
@@ -20,6 +20,9 @@ import { OptionalJwtAuthGuard } from 'src/modules/auth/jwt/optional.jwt-auth.gua
 import { QuestionsQueryDto } from '../dtos/query-questions.dto';
 import { PaginationResponse } from 'src/common/dto/pagination.response.dto';
 import { QuestionsResponseDto } from '../dtos/response-questions.dto';
+import { LangEnum } from 'src/common/enums';
+import { PaginationRequestDto } from 'src/common/dto/pagination.request.dto';
+import { UsersEntity } from 'src/modules/users/entities/users.entity';
 
 @Controller({ path: 'questions' })
 export class QuestionsController {
@@ -27,8 +30,8 @@ export class QuestionsController {
 
     @Post()
     @UseGuards(JwtAuthGuard)
-    async create(@Body() dto: QuestionsCreateDto, @CurrentUser('id', ParseIntPipe) userId: number) {
-        return this.questionsService.create(dto, userId);
+    async create(@Body() dto: QuestionsCreateDto, @CurrentUser() user: UsersEntity, @Headers('lang') lang: LangEnum) {
+        return this.questionsService.create(dto, user, lang);
     }
 
     @Get()
@@ -37,16 +40,39 @@ export class QuestionsController {
         return this.questionsService.getAll(query, userId);
     }
 
-    @Get(':slug')
+    @Get("my-questions")
+    @UseGuards(JwtAuthGuard)
+    async myQuestions(@CurrentUser('id') userId: number, @Query() query: PaginationRequestDto) {
+        return await this.questionsService.myQuestions(userId, query)
+    }
+
+    @Get("similar-questions/:id")
     @UseGuards(OptionalJwtAuthGuard)
-    async findOne(@Param('slug') slug: string, @CurrentUser('id') userId?: number): Promise<QuestionsResponseDto> {
-        return this.questionsService.getOne(slug, userId);
+    async getSimilarQuestions(@Param('id') id: number, @Query() dto: PaginationRequestDto, @CurrentUser('id') userId?: number) {
+        return await this.questionsService.getSimilarQuestions(id, dto.limit, dto.page, userId)
+    }
+
+    @Get('stats/last-hour-count')
+    async getLastHourCount() {
+        return this.questionsService.lastHourQuestions();
+    }
+
+    @Get('special')
+    @UseGuards(OptionalJwtAuthGuard)
+    async getSpecialOnes(@CurrentUser('id') userId?: number, @Headers('lang') lang?: LangEnum) {
+        return await this.questionsService.getSpecialOnes(userId, lang)
+    }
+
+    @Get(':id')
+    @UseGuards(OptionalJwtAuthGuard)
+    async findOne(@Param('id') id: number, @CurrentUser('id') userId?: number) {
+        return this.questionsService.getOne(id, userId);
     }
 
     @Patch(':id')
     @UseGuards(JwtAuthGuard)
-    async update(@Param('id', ParseIntPipe) id: number, @Body() dto: QuestionsUpdateDto, @CurrentUser('id', ParseIntPipe) userId: number) {
-        return this.questionsService.update(id, dto, userId)
+    async update(@Param('id', ParseIntPipe) id: number, @Body() dto: QuestionsUpdateDto, @CurrentUser('id', ParseIntPipe) userId: number, @Headers('lang') lang: LangEnum) {
+        return this.questionsService.update(id, dto, userId, lang)
     }
 
     @Delete(':id')

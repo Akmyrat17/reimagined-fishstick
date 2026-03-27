@@ -1,7 +1,7 @@
 import { DataSource, Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { PaginationRequestDto } from 'src/common/dto/pagination.request.dto';
-import { AnswersEntity } from '../entites/answers.entity';
+import { AnswersEntity } from '../entities/answers.entity';
 import { CheckStatusEnum } from 'src/common/enums/check-status.enum';
 
 @Injectable()
@@ -9,29 +9,38 @@ export class AnswersRepository extends Repository<AnswersEntity> {
     constructor(private dataSource: DataSource) {
         super(AnswersEntity, dataSource.createEntityManager());
     }
-
-    async findAll(dto: PaginationRequestDto) {
+    async findAll(dto: PaginationRequestDto, userId: number): Promise<[AnswersEntity[], number]> {
         const query = this.createQueryBuilder('answers')
-            .leftJoin('answers.answered_by', 'answered_by')
-            .leftJoin('answers.answered_to', 'answered_to')
-            .select(['answers.id', 'answers.slug', 'answers.content'])
-            .addSelect(['answered_by.id', 'answered_by.fullname'])
-            .addSelect(['answered_to.id', 'answered_to.title', 'answered_to.slug'])
-        if (dto.keyword && dto.keyword != '') {
-            query.where(`answers.content LIKE :keyword`, { keyword: `%${dto.keyword}%` })
+            .leftJoin('answers.question', 'question')
+            .select([
+                'answers.id',
+                'answers.content',
+                'answers.check_status',
+                'answers.reported_reason',
+                'answers.created_at',
+                'answers.answered_by_id'
+            ])
+            .addSelect(['question.id', 'question.title'])
+            .where('answers.deleted_at IS NULL')
+            .andWhere('answers.answered_by_id = :userId', { userId })
+
+        if (dto.keyword && dto.keyword !== '') {
+            query.andWhere('answers.content LIKE :keyword', { keyword: `%${dto.keyword}%` })
         }
-        return await query.andWhere('answers.check_status = :value', { value: CheckStatusEnum.APPROVED }).take(dto.limit).offset((dto.page - 1) * dto.limit).getManyAndCount()
+
+        const offset = (dto.page - 1) * dto.limit
+
+        const total = await query.getCount()
+
+        const data = await query
+            .orderBy('answers.created_at', 'DESC')
+            .take(dto.limit)
+            .skip(offset)
+            .getMany()
+
+        return [data, total]
     }
-    
-    async getOne(id: number) {
-        return await this.createQueryBuilder('answers')
-            .leftJoin('answers.answered_to', 'answered_to')
-            .leftJoin('answers.answered_by','answered_by')
-            .select(['answers.id', 'answers.slug', 'answers.content'])
-            .addSelect(['answered_by.id', 'answered_by.fullname'])
-            .addSelect(['answered_to.id', 'answered_to.title', 'answered_to.slug'])
-            .where('answers.id  = :id', { id })
-            .andWhere('answers.check_status = :value', { value: CheckStatusEnum.APPROVED })
-            .getOne()
+    async getLastHourAnswers() {
+        return await this.query(`SELECT COUNT(*) FROM answers WHERE deleted_at IS NULL AND created_at >= NOW() - INTERVAL '1 hour' AND check_status = '${CheckStatusEnum.APPROVED}'`)
     }
 }

@@ -1,0 +1,39 @@
+{
+    "permissions": [
+        {
+            "name": "answers.get-all",
+            "description": "to fetch answers with paginated response for edit or deletion",
+            "type": "ANSWERS"
+        },
+        {
+            "name": "answers.update",
+            "description": "to update answers",
+            "type": "ANSWERS"
+        },
+        {
+            "name": "answers.delete",
+            "description": "to delete answers",
+            "type": "ANSWERS"
+        },
+        {
+            "name": "questions.delete",
+            "description": "to delete questions",
+            "type": "QUESTIONS"
+        },
+        {
+            "name": "questions.get-all",
+            "description": "to fetch paginated questions",
+            "type": "QUESTIONS"
+        },
+        {
+            "name": "questions.get-one",
+            "description": "to get one question by id ",
+            "type": "QUESTIONS"
+        },
+        {
+            "name": "questions.update",
+            "description": "to update questions",
+            "type": "QUESTIONS"
+        }
+    ]
+}

@@ -6,20 +6,17 @@ import {
     Body,
     Param,
     Query,
-    UseInterceptors,
-    UploadedFile,
     ParseIntPipe,
     Patch,
     UseGuards,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { PaginationRequestDto } from 'src/common/dto/pagination.request.dto';
-import * as multer from 'multer';
 import { JwtAuthGuard } from 'src/modules/auth/jwt/jwt-auth.guard';
 import { AnswersCreateDto } from '../dtos/create-answers.dto';
 import { AnswersUpdateDto } from '../dtos/update-answers.dto';
 import { AnswersService } from '../services/answers.service';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { UsersEntity } from 'src/modules/users/entities/users.entity';
 
 @Controller({ path: 'answers' })
 export class AnswersController {
@@ -27,18 +24,19 @@ export class AnswersController {
 
     @Post()
     @UseGuards(JwtAuthGuard)
-    async create(@Body() dto: AnswersCreateDto, @CurrentUser('id', ParseIntPipe) userId: number) {
-        return this.answersService.create(dto, userId);
+    async create(@Body() dto: AnswersCreateDto, @CurrentUser() user: UsersEntity) {
+        return this.answersService.create(dto, user);
     }
 
     @Get()
-    async findAll(@Query() paginationQuery: PaginationRequestDto) {
-        return this.answersService.getAll(paginationQuery);
+    @UseGuards(JwtAuthGuard)
+    async findAll(@Query() paginationQuery: PaginationRequestDto, @CurrentUser('id') userId: number) {
+        return this.answersService.getAll(paginationQuery, userId);
     }
 
-    @Get(':id')
-    async findOne(@Param('id', ParseIntPipe) id: number) {
-        return this.answersService.getOne(id);
+    @Get('stats/last-hour-count')
+    async lastHourAnswers() {
+        return this.answersService.lastHourAnswers()
     }
 
     @Patch(':id')

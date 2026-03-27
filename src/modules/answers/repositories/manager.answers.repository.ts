@@ -1,7 +1,7 @@
 import { DataSource, Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { PaginationRequestDto } from 'src/common/dto/pagination.request.dto';
-import { AnswersEntity } from '../entites/answers.entity';
+import { AnswersEntity } from '../entities/answers.entity';
 import { AnswersQueryDto } from '../dtos/query-answers.dto';
 
 @Injectable()
@@ -10,27 +10,26 @@ export class ManagerAnswersRepository extends Repository<AnswersEntity> {
         super(AnswersEntity, dataSource.createEntityManager());
     }
 
-    async findAll(dto: AnswersQueryDto) {
+    async findAll(dto: AnswersQueryDto): Promise<[AnswersEntity[], number]> {
+        const { keyword, check_status, limit, page } = dto
         const query = this.createQueryBuilder('answers')
             .leftJoin('answers.answered_by', 'answered_by')
-            .leftJoin('answers.answered_to', 'answered_to')
-            .select(['answers.id', 'answers.slug', 'answers.content', 'answers.check_status'])
-            .addSelect(['answered_by.id', 'answered_by.fullname'])
-            .addSelect(['answered_to.id', 'answered_to.title', 'answered_to.slug', 'answered_to.priority'])
-        if (dto.keyword && dto.keyword != '') {
-            query.where(`answers.content LIKE :keyword`, { keyword: `%${dto.keyword}%` })
+            .leftJoin('answers.question', 'question')
+            .select(['answers.id', 'answers.content', 'answers.check_status', 'answers.created_at', 'answers.reported_reason', 'answers.deleted_at'])
+            .addSelect(['answered_by.id', 'answered_by.fullname', 'answered_by.role'])
+            .addSelect(['question.id', 'question.title', 'question.created_at'])
+        if (keyword && keyword != '') {
+            query.where(`answers.content LIKE :keyword`, { keyword: `%${keyword}%` })
+                .orWhere(`answered_by.fullname LIKE :keyword`, { keyword: `%${keyword}%` })
+                .orWhere(`question.title LIKE :keyword`, { keyword: `%${keyword}%` })
         }
-        if (dto.check_status) query.andWhere("questions.check_status = :value", { value: dto.check_status })
-        if (dto.priority) query.andWhere("questions.priority = :value", { value: dto.priority })
-        return await query.take(dto.limit).offset((dto.page - 1) * dto.limit).getManyAndCount()
-    }
-
-    async getOne(id: number) {
-        return await this.createQueryBuilder('answers')
-            .leftJoin('answers.answered_to', 'answered_to')
-            .select(['answers.id', 'answers.slug', 'answers.content', 'answers.check_status'])
-            .addSelect(['answered_to.id', 'answered_to.title', 'answered_to.slug', 'answered_to.priority'])
-            .where('answers.id  = :id', { id })
-            .getOne()
+        if (check_status) query.andWhere("questions.check_status = :value", { value: check_status })
+        query
+            .orderBy('answers.created_at', 'DESC')
+            .addOrderBy('answers.updated_at', 'DESC')
+        const offset = (page - 1) * limit
+        const total = await query.getCount()
+        const data = await query.take(limit).offset(offset).getMany()
+        return [data, total]
     }
 }

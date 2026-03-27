@@ -10,4 +10,14 @@ export class TagsController {
     async getAll(@Query() dto: PaginationRequestDto, @Headers('lang') lang: LangEnum) {
         return await this.tagsService.getAll(dto, lang)
     }
+
+    @Get('famous')
+    async getFamousTags(@Headers('lang') lang: LangEnum) {
+        return await this.tagsService.getFamousTags(lang)
+    }
+
+    @Get('without-pagination')
+    async getWithoutPagnation() {
+        return await this.tagsService.getWithoutPagination()
+    }
 }

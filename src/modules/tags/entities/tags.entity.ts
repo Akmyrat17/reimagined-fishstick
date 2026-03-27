@@ -1,39 +1,33 @@
-import { BaseEntity } from "src/database/enitities/base.entity";
-import { Column, Entity, JoinTable, ManyToMany } from "typeorm";
-import { QuestionsEntity } from "../../questions/entities/questions.entity";
-import { UsersEntity } from "src/modules/users/entities/user.entity";
+import { BaseEntity } from 'src/database/enitities/base.entity';
+import { Column, Entity, ManyToMany } from 'typeorm';
+import { QuestionsEntity } from '../../questions/entities/questions.entity';
+import { UsersEntity } from 'src/modules/users/entities/users.entity';
+import { BusinessProfilesEntity } from 'src/modules/business-profile/entities/business-profiles.entity';
 
-@Entity({name:"tags"})
+@Entity({ name: 'tags' })
 export class TagsEntity extends BaseEntity {
-    @Column({type:"text",nullable:false})
-    name_ru:string
+  @Column({ type: 'text', nullable: false, default: '' })
+  name: string;
 
-    @Column({type:"text",nullable:false})
-    name_tk:string
+  @Column({ type: 'text', nullable: true })
+  desc: string;
 
-    @Column({type:"text",nullable:false})
-    name_en:string
+  @Column({ type: 'text', nullable: false })
+  slug: string;
 
-    @Column({type:"text",nullable:false})
-    desc_ru:string
+  @ManyToMany(() => QuestionsEntity, (event) => event.tags, { onDelete: 'CASCADE' })
+  questions: QuestionsEntity[];
 
-    @Column({type:"text",nullable:false})
-    desc_tk:string
+  @ManyToMany(() => UsersEntity, (event) => event.tags, { onDelete: 'CASCADE' })
+  users: UsersEntity[];
 
-    @Column({type:"text",nullable:false})
-    desc_en:string
+  @ManyToMany(() => BusinessProfilesEntity, (event) => event.tags, {
+    onDelete: 'CASCADE',
+  })
+  business_profiles: BusinessProfilesEntity[];
 
-    @Column({type:"text",nullable:false})
-    slug:string
-
-    @ManyToMany(()=>QuestionsEntity,(event)=>event.tags,{onDelete:"CASCADE"})
-    questions:QuestionsEntity[]
-    
-    @ManyToMany(()=>UsersEntity,(event)=>event.tags,{onDelete:"CASCADE"})
-    users:UsersEntity[]
-    
-    constructor(init?:Partial<TagsEntity>){
-        super()
-        Object.assign(this,init)
-    }
+  constructor(init?: Partial<TagsEntity>) {
+    super();
+    Object.assign(this, init);
+  }
 }

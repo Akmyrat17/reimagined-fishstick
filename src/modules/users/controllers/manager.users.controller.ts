@@ -18,30 +18,24 @@ import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/modules/auth/jwt/jwt-auth.guard';
 import { LangEnum } from 'src/common/enums';
 
-@Controller({
-  path: "manager/users",
-})
+@Controller({ path: 'manager/users' })
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class ManagerUsersController {
   constructor(private readonly managerUsersService: ManagerUsersService) { }
 
   @Post()
-  create(
-    @Body() createUserDto: CreateUserDto,
-  ) {
+  create(@Body() createUserDto: CreateUserDto) {
     return this.managerUsersService.create(createUserDto);
   }
 
   @Get()
-  findAll(
-    @Query() paginationDto: PaginationRequestDto,
-  ) {
-    return this.managerUsersService.findAll(paginationDto);
+  findAll(@Query() paginationDto: PaginationRequestDto, @Headers('lang') lang: LangEnum) {
+    return this.managerUsersService.findAll(paginationDto, lang);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string,@Headers('lang') lang:LangEnum) {
-    return this.managerUsersService.findOne(+id,lang);
+  findOne(@Param('id') id: string, @Headers('lang') lang: LangEnum) {
+    return this.managerUsersService.findOne(+id, lang);
   }
 
   @Patch(':id')

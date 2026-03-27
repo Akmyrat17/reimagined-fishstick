@@ -1,7 +1,7 @@
 import { TagsEntity } from 'src/modules/tags/entities/tags.entity';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
-import { UsersEntity } from '../entities/user.entity';
+import { UsersEntity } from '../entities/users.entity';
 import { ProfessionsEntity } from 'src/modules/professions/entities/professions.entity';
 import { UsersResponseDto } from '../dtos/response-user.dto';
 import { ManagerAnswersMapper } from 'src/modules/answers/mappers/manager.answers.mapper';
@@ -9,6 +9,7 @@ import { ManagerQuestionsMapper } from 'src/modules/questions/mappers/manager.qu
 import { ManagerTagsMapper } from 'src/modules/tags/mappers/manager.tags.mapper';
 import { ManagerProfessionsMapper } from 'src/modules/professions/mappers/manager.professions.mapper';
 import { LangEnum } from 'src/common/enums';
+import { AddressesEntity } from 'src/modules/addresses/entities/addresses.entity';
 
 export class ManagerUsersMapper {
   async create(createUserDto: CreateUserDto): Promise<UsersEntity> {
@@ -17,35 +18,80 @@ export class ManagerUsersMapper {
     user.password = createUserDto.password;
     user.email = createUserDto.email;
     user.role = createUserDto.role;
-    user.profession = createUserDto.profession_id ? new ProfessionsEntity({id:createUserDto.profession_id}) : null;
-    user.tags = (createUserDto.tag_ids && createUserDto.tag_ids.length > 0) ? createUserDto.tag_ids.map((id) => new TagsEntity({id})) : [];
+    user.age = createUserDto.age;
+    user.address = createUserDto.address_id
+      ? new AddressesEntity({ id: createUserDto.address_id })
+      : null;
+    user.profession = createUserDto.profession_id
+      ? new ProfessionsEntity({ id: createUserDto.profession_id })
+      : null;
+    user.tags =
+      createUserDto.tag_ids && createUserDto.tag_ids.length > 0
+        ? createUserDto.tag_ids.map((id) => new TagsEntity({ id }))
+        : [];
     await user.save();
     delete user.password;
     return user;
   }
 
-  public static toUpdate(dto:UpdateUserDto,id:number) {
-    const entity = new UsersEntity({id})
-    if(dto.profession_id) entity.profession = new ProfessionsEntity({id:dto.profession_id})
-    if(dto.tag_ids) entity.tags = dto.tag_ids.map((id) => new TagsEntity({id}))
-    if(dto.fullname) entity.fullname = dto.fullname
-    if(dto.email) entity.email = dto.email
-    if(dto.role) entity.role = dto.role
-    if(dto.age) entity.age = dto.age
-    return entity
+  public static toUpdate(dto: UpdateUserDto, id: number) {
+    const entity = new UsersEntity({ id });
+    if (dto.profession_id)
+      entity.profession = new ProfessionsEntity({ id: dto.profession_id });
+    if (dto.tag_ids)
+      entity.tags = dto.tag_ids.map((id) => new TagsEntity({ id }));
+    if (dto.fullname) entity.fullname = dto.fullname;
+    if (dto.email) entity.email = dto.email;
+    if (dto.address_id)
+      entity.address = new AddressesEntity({ id: dto.address_id });
+    if (dto.role) entity.role = dto.role;
+    if (dto.age) entity.age = dto.age;
+    return entity;
   }
 
-  public static responseOne(entity:UsersEntity,lang:LangEnum) {
-    const dto = new UsersResponseDto()
-    dto.id = entity.id
-    dto.age = entity.age
-    dto.email = entity.email
-    dto.created_at = entity.created_at
-    dto.updated_at = entity.updated_at
-    dto.answers = entity.answers && entity.answers.length > 0 ? entity.answers.map(e=>ManagerAnswersMapper.toResponseSimple(e)) : [] 
-    dto.questions = entity.questions && entity.questions.length > 0 ? entity.questions.map(e=>ManagerQuestionsMapper.toResponseSimple(e)) : [] 
-    dto.tags = entity.tags && entity.tags.length > 0 ? entity.tags.map(e=>ManagerTagsMapper.toResponseSimple(e,lang)) : [] 
-    dto.profession = entity.profession ? ManagerProfessionsMapper.toResponseSimple(entity.profession,lang) : null
-    return dto
+  public static toResponseList(entity: UsersEntity, lang: LangEnum) {
+    const dto = new UsersResponseDto();
+    dto.id = entity.id;
+    dto.age = entity.age;
+    dto.email = entity.email;
+    dto.fullname = entity.fullname;
+    dto.created_at = entity.created_at;
+    dto.address = entity.address;
+    dto.profession = entity.profession
+      ? ManagerProfessionsMapper.toResponseSimple(entity.profession, lang)
+      : null;
+    dto.permissions = entity.permissions
+    // dto.total_business_profiles =
+    //   entity.business_profiles && entity.business_profiles.length > 0
+    //     ? entity.business_profiles.length
+    //     : 0;
+    return dto;
+  }
+
+  public static responseOne(entity: UsersEntity, lang: LangEnum) {
+    const dto = new UsersResponseDto();
+    dto.id = entity.id;
+    dto.age = entity.age;
+    dto.email = entity.email;
+    dto.created_at = entity.created_at;
+    dto.updated_at = entity.updated_at;
+    dto.answers =
+      entity.answers && entity.answers.length > 0
+        ? entity.answers.map((e) => ManagerAnswersMapper.toResponseSimple(e))
+        : [];
+    dto.questions =
+      entity.questions && entity.questions.length > 0
+        ? entity.questions.map((e) =>
+          ManagerQuestionsMapper.toResponseSimple(e, lang),
+        )
+        : [];
+    dto.tags =
+      entity.tags && entity.tags.length > 0
+        ? entity.tags.map((e) => ManagerTagsMapper.toResponse(e))
+        : [];
+    dto.profession = entity.profession
+      ? ManagerProfessionsMapper.toResponseSimple(entity.profession, lang)
+      : null;
+    return dto;
   }
 }

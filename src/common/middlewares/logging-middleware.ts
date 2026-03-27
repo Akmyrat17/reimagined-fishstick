@@ -1,5 +1,6 @@
 import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
+import { ActiveUsersTracker } from 'src/modules/users/services/active-users-tracker.service';
 
 @Injectable()
 export class LoggingMiddleware implements NestMiddleware {
@@ -8,7 +9,6 @@ export class LoggingMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction): void {
     const { method, originalUrl } = req;
     const start = Date.now();
-
     res.on('finish', () => {
       const { statusCode } = res;
       const duration = Date.now() - start;

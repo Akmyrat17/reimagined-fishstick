@@ -3,7 +3,6 @@ import { PaginationResponse } from 'src/common/dto/pagination.response.dto';
 import { ManagerBusinessProfilesRepository } from '../repositories/manager.business-profiles.repository';
 import { BusinessProfilesCreateDto } from '../dtos/create-business-profiles.dto';
 import { BusinessProfilesEntity } from '../entities/business-profiles.entity';
-import { makeSlug } from 'src/common/utils/slug.helper';
 import { ManagerBusinessProfilesMapper } from '../mappers/manager.business-profiles.mapper';
 import { BusinessProfilesUpdateDto } from '../dtos/update-business-profiles.dto';
 import { BusinessProfilesQueryDto } from '../dtos/query-business-profiles.dto';
@@ -16,18 +15,14 @@ export class ManagerBusinessProfilesService {
   ) { }
 
   async create(dto: BusinessProfilesCreateDto,): Promise<BusinessProfilesEntity> {
-    let filePaths: string[];
-    const slug = makeSlug(dto.company_name)
-    const mapped = ManagerBusinessProfilesMapper.toCreate(dto, filePaths, slug);
+    const mapped = ManagerBusinessProfilesMapper.toCreate(dto);
     return await this.managerBusinessProfileRepository.save(mapped);
   }
 
   async update(dto: BusinessProfilesUpdateDto, businessProfileId: number): Promise<BusinessProfilesEntity> {
     const businessProfile = await this.managerBusinessProfileRepository.findOne({ where: { id: businessProfileId } });
     if (!businessProfile) throw new NotFoundException();
-    let filePaths: string[];
-    const slug = dto.company_name ? makeSlug(dto.company_name) : businessProfile.slug
-    const mapped = ManagerBusinessProfilesMapper.toUpdate(dto, businessProfileId, slug, filePaths);
+    const mapped = ManagerBusinessProfilesMapper.toUpdate(dto, businessProfileId);
     return await this.managerBusinessProfileRepository.save(mapped);
   }
 

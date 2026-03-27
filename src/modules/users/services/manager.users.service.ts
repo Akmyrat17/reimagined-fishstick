@@ -8,6 +8,8 @@ import { PaginationRequestDto } from 'src/common/dto/pagination.request.dto';
 import { PaginationResponse } from 'src/common/dto/pagination.response.dto';
 import { UsersMapper } from '../mappers';
 import { ManagerUsersMapper } from '../mappers/manager.users.mapper';
+import { UsersQueryDto } from '../dtos/query-users.dto';
+import { PermissionsEntity } from 'src/modules/permissions/entities/permissions.entity';
 
 @Injectable()
 export class ManagerUsersService {
@@ -26,21 +28,48 @@ export class ManagerUsersService {
     }
   }
 
-  async findAll(paginationDto: PaginationRequestDto): Promise<PaginationResponse<any>> {
-    const [data, total] = await this.managerUsersRepository.findAll(paginationDto);
-    return new PaginationResponse(data, total, paginationDto.page, paginationDto.limit);
+  async findAll(paginationDto: UsersQueryDto, lang: LangEnum): Promise<PaginationResponse<any>> {
+    try {
+      const [data, total] = await this.managerUsersRepository.findAll(paginationDto);
+      const mapped = data.map(user => ManagerUsersMapper.toResponseList(user, lang))
+      return new PaginationResponse(mapped, total, paginationDto.page, paginationDto.limit);
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException(error.detail || error.message);
+    }
   }
 
-  async findOne(id: number,lang:LangEnum) {
+  async findOne(id: number, lang: LangEnum) {
     const user = await this.managerUsersRepository.findOne({ where: { id } });
     if (!user) throw new NotFoundException(`User with ID ${id} not found`);
-    return ManagerUsersMapper.responseOne(user,lang)
+    return ManagerUsersMapper.responseOne(user, lang)
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
-    const existingUser = await this.managerUsersRepository.findOne({ where: { id } });
+    const existingUser = await this.managerUsersRepository.findOne({ where: { id }, relations: ['permissions'] });
     if (!existingUser) throw new NotFoundException(`User with ID ${id} not found`);
     const mapped = ManagerUsersMapper.toUpdate(updateUserDto, id)
+    if (updateUserDto.permission_ids && updateUserDto.permission_ids.length > 0) {
+      const existingPermissions = existingUser.permissions; // [1, 2, 3]
+      const incomingIds = updateUserDto.permission_ids;     // [2, 4]
+
+      // Toggle logic:
+      // - 2 exists + sent → REMOVE
+      // - 4 doesn't exist + sent → ADD
+      // - 1, 3 exist + not sent → KEEP (unchanged)
+
+      const existingIds = existingPermissions.map(p => p.id);
+
+      // Keep permissions that were NOT in the incoming list
+      const kept = existingPermissions.filter(p => !incomingIds.includes(p.id));
+
+      // Add permissions that did NOT exist before
+      const added = incomingIds
+        .filter(permId => !existingIds.includes(permId))
+        .map(permId => new PermissionsEntity({ id: permId }));
+
+      mapped.permissions = [...kept, ...added];
+    }
     if (updateUserDto.password) mapped.password = await bcrypt.hash(updateUserDto.password, 10);
     return await this.managerUsersRepository.save(mapped)
   }
@@ -53,8 +82,13 @@ export class ManagerUsersService {
   }
 
   async findOneByFullname(username: string) {
-    const user = await this.managerUsersRepository.findOne({ where: { fullname: username } });
+    const user = await this.managerUsersRepository.findOne({ where: { fullname: username }, relations: ['permissions'] });
     if (!user) throw new NotFoundException(`User with username '${username}' not found`);
+    return user
+  }
+  async findOneById(id: number) {
+    const user = await this.managerUsersRepository.findOne({ where: { id: id }, relations: ['permissions'] });
+    if (!user) throw new NotFoundException(`User with id '${id}' not found`);
     return user
   }
 }

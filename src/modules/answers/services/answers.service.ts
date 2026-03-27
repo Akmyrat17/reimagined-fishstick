@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { PaginationRequestDto } from 'src/common/dto/pagination.request.dto';
 import { PaginationResponse } from 'src/common/dto/pagination.response.dto';
 import { AnswersCreateDto } from '../dtos/create-answers.dto';
@@ -6,50 +10,69 @@ import { AnswersUpdateDto } from '../dtos/update-answers.dto';
 import { AnswersResponseDto } from '../dtos/response-answers.dto';
 import { AnswersRepository } from '../repositories/answers.repository';
 import { AnswersMapper } from '../mappers/answers.mapper';
-import { ConfigService } from '@nestjs/config';
+import { AnswersEntity } from '../entities/answers.entity';
+import { ImageHelper } from 'src/common/utils/image.helper';
+import { VotesRepository } from 'src/modules/votes/repositories/votes.repository';
+import { UsersEntity } from 'src/modules/users/entities/users.entity';
+import { CheckStatusEnum, RolesEnum } from 'src/common/enums';
 
 @Injectable()
 export class AnswersService {
-  private readonly baseUrl:string
-  constructor(
-    private readonly answersRepository: AnswersRepository,
-    private readonly configService:ConfigService
-  ) { 
-    this.baseUrl = configService.get<string>('APP_URL')
+  constructor(private readonly answersRepository: AnswersRepository, private readonly votesRepository: VotesRepository) { }
+
+  async create(dto: AnswersCreateDto, user: UsersEntity) {
+    if (!user.is_verified) throw new ForbiddenException("User is not verified");
+    const mapped = AnswersMapper.toCreate(dto, user.id);
+    if (user.role === RolesEnum.ADMIN) mapped.check_status = CheckStatusEnum.APPROVED
+    return await this.answersRepository.save(mapped);
   }
 
-  async create(dto:AnswersCreateDto,userId:number){
-    const mapped = AnswersMapper.toCreate(dto,userId)
-    return await this.answersRepository.save(mapped)
+  async update(dto: AnswersUpdateDto, id: number, userId: number) {
+    const entity = await this.answersRepository.findOne({ where: { id, answered_by: { id: userId } } });
+    if (!entity) throw new ForbiddenException('Answer not found or you do not have permission to update this answer');
+    if (entity.check_status === CheckStatusEnum.APPROVED) throw new ForbiddenException('Approved answer cannot be updated')
+    const mapped = AnswersMapper.toUpdate(dto, id);
+    if (dto.content) {
+      let oldImageUrls = ImageHelper.extractImageUrls(entity.content)
+      let newImageUrls = ImageHelper.extractImageUrls(dto.content)
+      let mustDeleteUrls = oldImageUrls.filter(url => !newImageUrls.includes(url))
+      ImageHelper.deleteImages(mustDeleteUrls)
+    }
+    mapped.check_status = CheckStatusEnum.NOT_CHECKED
+    return await this.answersRepository.save(mapped);
   }
 
-  async update(dto:AnswersUpdateDto,id:number,userId:number){
-    const entity = await this.answersRepository.findOne({where:{id,answered_by:{id:userId}}})
-    if(!entity) throw new ForbiddenException()
-    const mapped = AnswersMapper.toUpdate(dto,id)
-    return await this.answersRepository.save(mapped)
+  async getAll(dto: PaginationRequestDto, userId: number) {
+    try {
+      const [entities, total] = await this.answersRepository.findAll(dto, userId);
+      const mapped = entities.map((entity) => AnswersMapper.toResponseSimple(entity));
+      return new PaginationResponse<AnswersResponseDto>(mapped, total, dto.page, dto.limit);
+    } catch (error) {
+      console.error(error);
+      throw new BadRequestException(error.detail || error.message);
+    }
   }
 
-  async getAll(dto: PaginationRequestDto) {
-    const [entities, total] =
-      await this.answersRepository.findAll(dto);
-    const mapped = entities.map((entity) =>{
-      const dto = AnswersMapper.toResponseSimple(entity)
-      return dto
+  async remove(id: number, userId: number) {
+    const entity = await this.answersRepository.findOne({ where: { id, answered_by: { id: userId } } });
+    if (!entity) throw new ForbiddenException();
+    await this.removeByEntities([entity])
+    return { success: true, message: 'Answer deleted successfully' };
+  }
+
+  async removeByEntities(entities: AnswersEntity[]) {
+    let mustDeleteUrls = []
+    entities.map(e => {
+      let imageUrls = ImageHelper.extractImageUrls(e.content)
+      if (imageUrls.length > 0) mustDeleteUrls.push(...imageUrls)
     })
-    return new PaginationResponse<AnswersResponseDto>(mapped, total, dto.page, dto.limit)
+    ImageHelper.deleteImages(mustDeleteUrls)
+    await this.answersRepository.remove(entities)
+    let ids = entities.map(e => e.id)
+    if (ids.length > 0) await this.votesRepository.removeByTypeIds(ids, 'answers')
   }
 
-  async getOne(id: number) {
-    const entity = await this.answersRepository.getOne(id)
-    if (!entity) throw new NotFoundException()
-    const mapped = AnswersMapper.toResponseSimple(entity)
-    return mapped
-  }
-
-  async remove(id: number,userId:number) {
-    const entity = await this.answersRepository.findOne({where:{id,answered_by:{id:userId}}})
-    if(!entity) throw new ForbiddenException()
-    return await this.answersRepository.remove(entity)
+  async lastHourAnswers() {
+    return await this.answersRepository.getLastHourAnswers();
   }
 }

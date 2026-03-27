@@ -1,5 +1,5 @@
 
-import { UsersEntity } from "../../modules/users/entities/user.entity";
+import { UsersEntity } from "../../modules/users/entities/users.entity";
 import { RolesEnum } from "../../common/enums";
 import * as bcrypt from 'bcrypt';
 import { seederDataSource } from "../../config/seeder.typeorm";

@@ -1,6 +1,6 @@
 import { VotesTypeEnum } from "src/common/enums/votes-type.enum";
 import { BaseEntity } from "src/database/enitities/base.entity";
-import { UsersEntity } from "src/modules/users/entities/user.entity";
+import { UsersEntity } from "src/modules/users/entities/users.entity";
 import { Column, Entity, JoinColumn, ManyToOne } from "typeorm";
 
 @Entity({ name: "votes" })
@@ -11,10 +11,10 @@ export class VotesEntity extends BaseEntity {
     @Column({ type: "int", default: 0, nullable: false })
     target_id: number
 
-    @Column({ type: 'enum', default: VotesTypeEnum.QUESTIONS, nullable: false,enum:VotesTypeEnum })
+    @Column({ type: 'enum', default: VotesTypeEnum.QUESTIONS, nullable: false, enum: VotesTypeEnum })
     type: VotesTypeEnum
 
-    @ManyToOne(() => UsersEntity, (event) => event.votes)
+    @ManyToOne(() => UsersEntity, (event) => event.votes, { onDelete: "CASCADE" })
     @JoinColumn({ name: 'user_id', referencedColumnName: "id" })
     user: UsersEntity
 

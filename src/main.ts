@@ -20,6 +20,12 @@ async function bootstrap() {
     type: VersioningType.URI,
     defaultVersion: '1',
   });
+  app.enableCors({
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true
+  });
+
   app.setGlobalPrefix(config.get('APP_PREFIX'));
   const port = config.get('APP_PORT');
   app.useGlobalPipes(
@@ -32,7 +38,7 @@ async function bootstrap() {
     new LoggingExceptionFilter(),
     new HttpExceptionFilter(app.get(HttpAdapterHost)),
   );
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 }
 bootstrap().then(() => {
   Logger.log(`Application is running on port ${process.env.APP_PORT}`);

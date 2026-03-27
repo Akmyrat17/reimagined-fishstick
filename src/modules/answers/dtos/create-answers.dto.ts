@@ -1,20 +1,16 @@
-import { IsEnum, IsNotEmpty, IsNumber, IsString } from "class-validator";
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 import { CheckStatusEnum } from "src/common/enums/check-status.enum";
 
 export class AnswersCreateDto {
     @IsNotEmpty()
     @IsString()
-    content:string
+    content: string
 
     @IsNotEmpty()
     @IsNumber()
-    answered_to_id:number
+    question_id: number
 
-    @IsNotEmpty()
-    @IsNumber()
-    answered_by_id:number
-
-    @IsNotEmpty()
+    @IsOptional()
     @IsEnum(CheckStatusEnum)
-    check_status:CheckStatusEnum
+    check_status: CheckStatusEnum
 }

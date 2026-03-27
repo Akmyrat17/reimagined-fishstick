@@ -26,43 +26,58 @@ async function detectMagickCommand() {
     }
     return imageMagickCmd;
 }
-
 @Processor('image-queue')
 export class ImageConsumer extends WorkerHost {
-    async process(job: Job<{ buffer: Buffer; filename: string; outputDir: string }>) {
-        const { buffer: rawBuffer, filename, outputDir } = job.data;
-        console.log(rawBuffer)
-        // Ensure proper Buffer
+    async process(job: Job<{
+        buffer: Buffer;
+        filename: string;
+        outputDir: string;
+        quality?: number;      // Optional: default 80
+        maxWidth?: number;     // Optional: default 1920
+        maxHeight?: number;    // Optional: default 1080
+    }>) {
+        const {
+            buffer: rawBuffer,
+            filename,
+            outputDir,
+            quality = 80,        // ← Default quality
+            maxWidth = 1920,     // ← Default max width
+            maxHeight = 1080,    // ← Default max height
+        } = job.data;
+
         const buffer = Buffer.isBuffer(rawBuffer)
             ? rawBuffer
             : Buffer.from((rawBuffer as any).data);
 
-        // Create output folder if not exists
         await fs.mkdir(outputDir, { recursive: true });
 
-        // Temp file for conversion
         const tempPath = path.join(outputDir, `temp-${Date.now()}-${filename}`);
         await fs.writeFile(tempPath, buffer);
 
-        // Final file path
         const finalWebpPath = path.join(outputDir, filename.replace(/\.[^.]+$/, '.webp'));
 
         try {
             const cmd = await detectMagickCommand();
-            console.log(`🟡 Converting image: ${tempPath} → ${finalWebpPath}`);
 
-            // Run ImageMagick
+            // Get original file size for logging
+            const originalSize = buffer.length;
+            console.log(`🟡 Converting: ${filename} (${(originalSize / 1024 / 1024).toFixed(2)}MB)`);
+
             await execFileAsync(cmd, [
                 tempPath,
+                '-quality', String(quality),           // ← Compression quality
+                '-resize', `${maxWidth}x${maxHeight}>`, // ← Resize if larger (> means only shrink)
+                '-strip',                               // ← Remove EXIF/metadata
+                '-define', 'webp:method=6',             // ← Best WebP compression
+                '-define', 'webp:lossless=false',       // ← Lossy = smaller files
                 finalWebpPath,
             ]);
 
-            console.log(`✅ Image converted successfully: ${finalWebpPath}`);
+
         } catch (err: any) {
             console.error(`❌ Failed to convert ${filename}:`, err.message);
             throw err;
         } finally {
-            // Clean up temp file
             try {
                 await fs.unlink(tempPath);
             } catch { }

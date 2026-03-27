@@ -1,7 +1,9 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dtos/login.dto';
 import { SignUpDto } from './dtos/sign-up.dto';
+import { ResetPasswordDto } from './dtos/reset-password.dto';
+import { Response } from 'express';
 
 @Controller({ path: 'auth' })
 export class AuthController {
@@ -10,7 +12,13 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+    return this.authService.appLogin(loginDto);
+  }
+
+  @Post('manager/login')
+  @HttpCode(HttpStatus.OK)
+  managerLogin(@Body() loginDto: LoginDto) {
+    return this.authService.managerLogin(loginDto);
   }
 
   @Post('sign-up')
@@ -20,13 +28,20 @@ export class AuthController {
 
   @Get('verify-email/:token')
   @HttpCode(HttpStatus.OK)
-  async verifyEmail(@Param('token') token: string) {
-    return this.authService.verifyEmail(token);
+  async verifyEmail(@Param('token') token: string, @Res() res: Response) {
+    const url = await this.authService.verifyEmail(token);
+    return res.redirect(url)
   }
 
   @Post('refresh-token')
   @HttpCode(HttpStatus.OK)
   async refreshToken(@Body('refresh_token') refreshToken: string) {
     return this.authService.refreshToken(refreshToken);
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto, @Res() res: Response) {
+    const url = await this.authService.resetPassword(dto);
+    return res.redirect(url)
   }
 }

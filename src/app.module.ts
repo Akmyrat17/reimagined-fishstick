@@ -7,6 +7,9 @@ import typeormConfig from './config/typeorm';
 import { CacheModule } from '@nestjs/cache-manager';
 import KeyvRedis from '@keyv/redis';
 import { BullModule } from '@nestjs/bullmq';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
+import { ActiveUsersTracker } from './modules/users/services/active-users-tracker.service';
 
 @Module({
   imports: [
@@ -38,6 +41,10 @@ import { BullModule } from '@nestjs/bullmq';
         };
       },
       isGlobal: true
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads'),
+      serveRoot: '/uploads',
     }),
     BullModule.forRootAsync({
       inject: [ConfigService],
