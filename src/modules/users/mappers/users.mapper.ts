@@ -12,11 +12,11 @@ import { AddressesEntity } from 'src/modules/addresses/entities/addresses.entity
 export class UsersMapper {
   public static profileUpdate(dto: UpdateUserDto, id: number) {
     const entity = new UsersEntity({ id })
-    if (dto.fullname) entity.fullname = dto.fullname
-    if (dto.age) entity.age = dto.age
-    if (dto.address_id) entity.address = new AddressesEntity({ id: dto.address_id })
-    if (dto.profession_id) entity.profession = new ProfessionsEntity({ id: dto.profession_id })
-    if (dto.tag_ids) entity.tags = dto.tag_ids.map((id) => new TagsEntity({ id }))
+    entity.fullname = dto.fullname
+    entity.age = dto.age ? dto.age : null
+    entity.address = dto.address_id ? new AddressesEntity({ id: dto.address_id }) : null
+    entity.profession = dto.profession_id ? new ProfessionsEntity({ id: dto.profession_id }) : null
+    entity.tags = dto.tag_ids && dto.tag_ids.length > 0 ? dto.tag_ids.map((id) => new TagsEntity({ id })) : null
     return entity
   }
 

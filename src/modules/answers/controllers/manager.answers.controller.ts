@@ -37,6 +37,12 @@ export class ManagerAnswersController {
         return this.managerAnswersService.getAll(paginationQuery);
     }
 
+    @Get('total')
+    @Permissions('answers.get-total')
+    async getTotal() {
+        return this.managerAnswersService.getTotal();
+    }
+
     @Patch(':id')
     @Permissions('answers.update')
     async update(@Param('id', ParseIntPipe) id: number, @Body() dto: AnswersUpdateDto) {

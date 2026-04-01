@@ -17,6 +17,7 @@ import { AnswersUpdateDto } from '../dtos/update-answers.dto';
 import { AnswersService } from '../services/answers.service';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { UsersEntity } from 'src/modules/users/entities/users.entity';
+import { OptionalJwtAuthGuard } from 'src/modules/auth/jwt/optional.jwt-auth.guard';
 
 @Controller({ path: 'answers' })
 export class AnswersController {
@@ -31,7 +32,18 @@ export class AnswersController {
     @Get()
     @UseGuards(JwtAuthGuard)
     async findAll(@Query() paginationQuery: PaginationRequestDto, @CurrentUser('id') userId: number) {
-        return this.answersService.getAll(paginationQuery, userId);
+        return this.answersService.getAll(paginationQuery, userId, false);
+    }
+
+    @Get('question/:questionId')
+    @UseGuards(OptionalJwtAuthGuard)
+    async getByQuestionId(@Param('questionId', ParseIntPipe) questionId: number, @Query() paginationQuery: PaginationRequestDto, @CurrentUser('id') userId?: number) {
+        return this.answersService.getByQuestionId(questionId, paginationQuery, userId);
+    }
+
+    @Get('users/:userId')
+    async getByUserId(@Param('userId', ParseIntPipe) userId: number, @Query() paginationQuery: PaginationRequestDto) {
+        return this.answersService.getAll(paginationQuery, userId, true);
     }
 
     @Get('stats/last-hour-count')
@@ -41,8 +53,8 @@ export class AnswersController {
 
     @Patch(':id')
     @UseGuards(JwtAuthGuard)
-    async update(@Param('id', ParseIntPipe) id: number, @CurrentUser('id', ParseIntPipe) userId: number, @Body() dto: AnswersUpdateDto) {
-        return this.answersService.update(dto, id, userId)
+    async update(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: UsersEntity, @Body() dto: AnswersUpdateDto) {
+        return this.answersService.update(dto, id, user)
     }
 
     @Delete(':id')

@@ -43,7 +43,12 @@ export class QuestionsController {
     @Get("my-questions")
     @UseGuards(JwtAuthGuard)
     async myQuestions(@CurrentUser('id') userId: number, @Query() query: PaginationRequestDto) {
-        return await this.questionsService.myQuestions(userId, query)
+        return await this.questionsService.questionsByUserId(userId, query, false)
+    }
+
+    @Get("others-questions/:id")
+    async othersQuestions(@Param('id', ParseIntPipe) id: number, @Query() query: PaginationRequestDto) {
+        return await this.questionsService.questionsByUserId(id, query, true)
     }
 
     @Get("similar-questions/:id")
@@ -71,8 +76,8 @@ export class QuestionsController {
 
     @Patch(':id')
     @UseGuards(JwtAuthGuard)
-    async update(@Param('id', ParseIntPipe) id: number, @Body() dto: QuestionsUpdateDto, @CurrentUser('id', ParseIntPipe) userId: number, @Headers('lang') lang: LangEnum) {
-        return this.questionsService.update(id, dto, userId, lang)
+    async update(@Param('id', ParseIntPipe) id: number, @Body() dto: QuestionsUpdateDto, @CurrentUser() user: UsersEntity, @Headers('lang') lang: LangEnum) {
+        return this.questionsService.update(id, dto, user, lang)
     }
 
     @Delete(':id')

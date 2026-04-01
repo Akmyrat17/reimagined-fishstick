@@ -6,6 +6,11 @@
             "type": "ANSWERS"
         },
         {
+            "name": "answers.get-total",
+            "description": "to get total number of answers",
+            "type": "ANSWERS"
+        },
+        {
             "name": "answers.update",
             "description": "to update answers",
             "type": "ANSWERS"
@@ -23,6 +28,11 @@
         {
             "name": "questions.get-all",
             "description": "to fetch paginated questions",
+            "type": "QUESTIONS"
+        },
+        {
+            "name": "questions.get-total",
+            "description": "to get total number of questions",
             "type": "QUESTIONS"
         },
         {

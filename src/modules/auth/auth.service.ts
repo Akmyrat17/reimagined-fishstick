@@ -48,7 +48,7 @@ export class AuthService {
       const result = await this.usersRepository.getUserByEmail(email);
 
       if (!result)
-        throw new NotFoundException('Email or password is incorrect');
+        throw new NotFoundException('User not found');
       // If allowedRoles is provided, check if user's role is allowed
       if (allowedRoles && !allowedRoles.includes(result.role))
         throw new ForbiddenException('You are not allowed to enter this');
@@ -85,9 +85,8 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(signUpDto.password, 10);
     const newUser = new UsersEntity({ fullname: signUpDto.fullname, email: signUpDto.email, password: hashedPassword, role: RolesEnum.USER });
     const saved = await this.usersRepository.save(newUser);
-    const tokens = await this.generateTokens(saved);
     await this.sendVerificationToken(saved.email);
-    return { tokens, saved };
+    return { message: "Successfully created user, Now verify your email" };
   }
 
   async refreshToken(refreshToken: string) {
@@ -131,31 +130,97 @@ export class AuthService {
 
   async verifyEmail(token: string) {
     const email = await this.cacheManager.get<string>(`verify:${token}`);
-    if (!email) throw new UnauthorizedException('Expired or invalid token');
+    if (!email) return this.configService.get('BASE_URL') + '/auth/login'
     const user = await this.usersRepository.getUserByEmail(email);
-    if (!user) throw new UnauthorizedException('User not found');
+    if (!user) return this.configService.get('BASE_URL') + '/auth/login'
     user.is_verified = true;
     await this.usersRepository.save(user);
     await this.cacheManager.del(`verify:${token}`);
     return this.configService.get('BASE_URL') + '/auth/login?email=' + email
   }
 
+  async sendResetVerification(email: string) {
+    try {
+      const user = await this.usersRepository.getUserByEmail(email)
+      if (!user) throw new NotFoundException('User not found')
+
+      const existing = await this.cacheManager.get(`reset:pending:${email}`)
+      if (existing) return { message: 'Reset email already sent. Please check your inbox.' }
+
+      const token = uuidv4()
+      await this.cacheManager.set(`reset:${token}`, email, 1000 * 60 * 5) // 5 minutes
+      await this.cacheManager.set(`reset:pending:${email}`, token, 1000 * 60 * 5) // same TTL to prevent multiple requests
+
+      user.is_verified = false
+      await this.usersRepository.save(user)
+
+      const resetUrl = `${this.appUrl}/auth/verify-reset/${token}`
+      await GmailHelper.SendPasswordResetEmail(email, resetUrl)
+
+      return { message: 'Reset verification email sent. Please check your inbox.' }
+    } catch (error) {
+      console.log(error)
+      throw new BadRequestException(error.message || error.details)
+    }
+  }
+
+  async verifyReset(token: string) {
+    try {
+      const email = await this.cacheManager.get<string>(`reset:${token}`)
+      if (!email) {
+        const loginUrl = this.configService.get('BASE_URL')
+        return `${loginUrl}/auth/login`
+      }
+
+      const user = await this.usersRepository.getUserByEmail(email)
+      if (!user) throw new UnauthorizedException('User not found')
+
+      user.is_verified = true
+      await this.usersRepository.save(user)
+
+      await this.cacheManager.del(`reset:pending:${email}`)
+
+      const frontendUrl = this.configService.get('BASE_URL')
+      return `${frontendUrl}/auth/reset-password?token=${token}`
+    } catch (error) {
+      console.log(error)
+      throw new BadRequestException(error.message || error.details)
+    }
+  }
+
+  // async checkResetVerification(email: string) {
+  //   try {
+  //     const user = await this.usersRepository.getUserByEmail(email)
+  //     if (!user) throw new NotFoundException('User not found')
+
+  //     const pending = await this.cacheManager.get(`reset:pending:${email}`)
+  //     return { verified: !pending }
+  //   } catch (error) {
+  //     console.log(error)
+  //     throw new BadRequestException(error.message || error.details)
+  //   }
+  // }
+
   async resetPassword(dto: ResetPasswordDto) {
     try {
-      if (dto.password !== dto.confirm_password) throw new BadRequestException('Passwords do not match');
+      if (dto.password !== dto.confirm_password)
+        throw new BadRequestException('Passwords do not match')
 
-      const user = await this.usersRepository.getUserByEmail(dto.email);
-      if (!user) throw new NotFoundException('User not found');
+      const email = await this.cacheManager.get<string>(`reset:${dto.token}`)
+      if (!email) throw new UnauthorizedException('Expired or invalid token')
 
-      user.password = await bcrypt.hash(dto.password, 10);
-      user.is_verified = false;
-      await this.usersRepository.save(user);
+      const user = await this.usersRepository.getUserByEmail(email)
+      if (!user) throw new NotFoundException('User not found')
 
-      await this.sendVerificationToken(user.email);
-      return this.configService.get('BASE_URL') + '/auth/login?email=' + user.email
+      user.password = await bcrypt.hash(dto.password, 10)
+      await this.usersRepository.save(user)
+
+      await this.cacheManager.del(`reset:${dto.token}`) // cleanup now
+
+      return { message: 'Password reset successfully.' }
     } catch (error) {
-      console.log(error);
-      throw new BadRequestException(error.message || error.details);
+      console.log(error)
+      throw new BadRequestException(error.message || error.details)
     }
   }
 
@@ -166,8 +231,8 @@ export class AuthService {
       if (existingToken) return { message: 'Verification email was already sent. Please check your inbox.' };
 
       const verificationToken = uuidv4();
-      await this.cacheManager.set(`verify:${verificationToken}`, email, 1000 * 60 * 10);
-      await this.cacheManager.set(`verify:pending:${email}`, verificationToken, 1000 * 60 * 10); // same TTL
+      await this.cacheManager.set(`verify:${verificationToken}`, email, 1000 * 60 * 5); // 5 minutes
+      await this.cacheManager.set(`verify:pending:${email}`, verificationToken, 1000 * 60 * 5); // same TTL
       const verificationUrl = `${this.appUrl}/auth/verify-email/${verificationToken}`;
       await GmailHelper.SendVerificationEmail(email, verificationUrl);
       return { message: 'Verification email sent. Please check your inbox.' };

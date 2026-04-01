@@ -32,6 +32,10 @@ export class ManagerUsersController {
   findAll(@Query() paginationDto: PaginationRequestDto, @Headers('lang') lang: LangEnum) {
     return this.managerUsersService.findAll(paginationDto, lang);
   }
+  @Get('total')
+  getTotal() {
+    return this.managerUsersService.getTotal();
+  }
 
   @Get(':id')
   findOne(@Param('id') id: string, @Headers('lang') lang: LangEnum) {

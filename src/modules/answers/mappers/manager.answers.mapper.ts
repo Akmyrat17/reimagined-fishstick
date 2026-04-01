@@ -35,7 +35,8 @@ export class ManagerAnswersMapper {
         dto.content = entity.content
         dto.check_status = entity.check_status
         dto.reported_reason = entity.reported_reason
-        dto.deleted_at = entity.deleted_at
+        dto.created_at = entity.created_at
+        dto.updated_at = entity.updated_at
         return dto
     }
 

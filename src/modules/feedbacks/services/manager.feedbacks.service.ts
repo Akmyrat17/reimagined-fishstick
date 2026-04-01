@@ -9,7 +9,7 @@ import { PaginationResponse } from 'src/common/dto/pagination.response.dto';
 export class ManagerFeedbacksService {
   constructor(
     private readonly managerFeedbacksRepository: ManagerFeedbacksRepository,
-  ) {}
+  ) { }
 
   async reply(dto: FeedbacksReplyDto, id: number) {
     try {
@@ -44,5 +44,14 @@ export class ManagerFeedbacksService {
       await this.managerFeedbacksRepository.save(entity);
     }
     return entity;
+  }
+
+  async delete(id: number) {
+    const entity = await this.managerFeedbacksRepository.findOne({
+      where: { id },
+    });
+    if (!entity) throw new NotFoundException();
+    const result = await this.managerFeedbacksRepository.delete(id);
+    return { success: result.affected > 0 };
   }
 }

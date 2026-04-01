@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Inject, ForbiddenException } from '@nestjs/common';
 import { LangEnum, RolesEnum } from 'src/common/enums';
 import { ManagerUsersRepository } from '../repositories/manager.users.repository';
 import { CreateUserDto } from '../dtos/create-user.dto';
@@ -10,10 +10,14 @@ import { UsersMapper } from '../mappers';
 import { ManagerUsersMapper } from '../mappers/manager.users.mapper';
 import { UsersQueryDto } from '../dtos/query-users.dto';
 import { PermissionsEntity } from 'src/modules/permissions/entities/permissions.entity';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class ManagerUsersService {
-  constructor(private managerUsersRepository: ManagerUsersRepository) { }
+  constructor(
+    private managerUsersRepository: ManagerUsersRepository,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) { }
   async create(createUserDto: CreateUserDto) {
     try {
       const existingUser = await this.managerUsersRepository.findOne({ where: { fullname: createUserDto.fullname } })
@@ -77,6 +81,8 @@ export class ManagerUsersService {
   async remove(id: number) {
     const user = await this.managerUsersRepository.findOne({ where: { id } });
     if (!user) throw new NotFoundException(`User with ID ${id} not found`);
+    if (user.role === RolesEnum.ADMIN) throw new ForbiddenException(`Cannot delete an admin user`)
+    await this.cacheManager.del(`verify:pending:${user.email}`);
     const result = await this.managerUsersRepository.delete(id);
     if (result.affected === 0) throw new NotFoundException(`Failed to delete user with ID ${id}`);
   }
@@ -86,9 +92,19 @@ export class ManagerUsersService {
     if (!user) throw new NotFoundException(`User with username '${username}' not found`);
     return user
   }
+
   async findOneById(id: number) {
     const user = await this.managerUsersRepository.findOne({ where: { id: id }, relations: ['permissions'] });
     if (!user) throw new NotFoundException(`User with id '${id}' not found`);
     return user
+  }
+
+  async getTotal() {
+    try {
+      return await this.managerUsersRepository.getTotal();
+    } catch (error) {
+      console.error(error);
+      throw new BadRequestException(error.detail || error.message);
+    }
   }
 }

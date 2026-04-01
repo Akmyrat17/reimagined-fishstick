@@ -25,7 +25,7 @@ export class PermissionsGuard implements CanActivate {
             return false;
         }
         if (user.role === RolesEnum.ADMIN) return true
-        if (user.role !== RolesEnum.MODERATOR) return false
+        // if (user.role !== RolesEnum.MODERATOR) return false
         return this.hasPermissions(user, requiredPermissions);
     }
 

@@ -5,6 +5,7 @@ import { ManagerAddressesMapper } from "../mappers/manager.addresses.mapper";
 import { AddressesRepository } from "../repositories/addresses.repository";
 import { PaginationRequestDto } from "src/common/dto/pagination.request.dto";
 import { PaginationResponse } from "src/common/dto/pagination.response.dto";
+import { AddressesUpdateDto } from "../dtos/update-addresses.dto";
 
 @Injectable()
 export class ManagerAddressesService {
@@ -23,5 +24,12 @@ export class ManagerAddressesService {
     async delete(id: number) {
         const address = await this.managerAddressesRepository.findOne({ where: { id } })
         return (await this.managerAddressesRepository.delete(address.id)).affected === 1 ? { message: `Address with ID ${id} successfully deleted` } : { message: `Address with ID ${id} not found` }
+    }
+
+    async update(dto: AddressesUpdateDto, id: number) {
+        const address = await this.managerAddressesRepository.findOne({ where: { id } })
+        if (!address) return { message: `Address with ID ${id} not found` }
+        const mapped = ManagerAddressesMapper.toUpdate(dto, address.id)
+        return await this.managerAddressesRepository.save(mapped)
     }
 }

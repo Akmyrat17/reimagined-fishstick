@@ -33,7 +33,7 @@ export class ManagerUsersRepository extends Repository<UsersEntity> {
     );
     if (is_verified === true || is_verified === false) queryBuilder.andWhere("users.is_verified = :value", { value: is_verified })
     const total = await queryBuilder.getCount();
-    const data = await queryBuilder.skip(skip).take(limit).getMany();
+    const data = await queryBuilder.orderBy('users.created_at', 'DESC').skip(skip).take(limit).getMany();
     return [data, total];
   }
 
@@ -47,5 +47,12 @@ export class ManagerUsersRepository extends Repository<UsersEntity> {
       .addSelect(['answers.id', 'answers.content', 'answers.created_at', 'answers.check_status'])
       .where('users.id =:id', { id })
       .getOne()
+  }
+
+  async getTotal() {
+    return await this.createQueryBuilder('users')
+      .select('COUNT(*)', 'total')
+      .addSelect("COUNT(CASE WHEN users.is_verified = true THEN 1 END)", 'total_verified')
+      .getRawOne();
   }
 }

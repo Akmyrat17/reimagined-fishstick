@@ -22,9 +22,9 @@ export class UsersRepository extends Repository<UsersEntity> {
       .leftJoin('users.profession', 'profession')
       .leftJoin('users.address', 'address')
       .leftJoin('users.tags', 'tags')
-      .select(['users.id', 'users.fullname', 'users.email', 'users.age', 'users.password'])
+      .select(['users.id', 'users.fullname', 'users.email', 'users.age', 'users.password', 'users.created_at'])
       .addSelect([`profession.id`, `profession.name`])
-      .addSelect(['address.id', 'address.province', 'address.city', 'address.district'])
+      .addSelect(['address.id', 'address.province'])
       .addSelect([`tags.id`, `tags.name`])
       .where('users.id = :id', { id })
       .getOne();

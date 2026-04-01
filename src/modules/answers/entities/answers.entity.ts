@@ -15,7 +15,7 @@ export class AnswersEntity extends BaseEntity {
     @Column({ type: "text", nullable: true })
     reported_reason: string
 
-    @ManyToOne(() => QuestionsEntity, (event) => event.id, { onDelete: 'SET NULL' })
+    @ManyToOne(() => QuestionsEntity, (event) => event.id, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'question_id' })
     question: QuestionsEntity
 

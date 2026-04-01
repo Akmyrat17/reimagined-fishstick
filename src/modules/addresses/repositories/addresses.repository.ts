@@ -25,6 +25,7 @@ export class AddressesRepository extends Repository<AddressesEntity> {
 
         const total = await query.getCount();
         const data = await query
+            .orderBy('addresses.updated_at', 'DESC')
             .take(limit)
             .skip(offset)
             .getMany();

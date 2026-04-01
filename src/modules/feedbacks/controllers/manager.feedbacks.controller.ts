@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Query, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query, Body, UseGuards, Delete } from '@nestjs/common';
 import { ManagerFeedbacksService } from '../services/manager.feedbacks.service';
 import { FeedbacksReplyDto } from '../dtos/reply-feedbacks.dto';
 import { PaginationRequestDto } from 'src/common/dto/pagination.request.dto';
@@ -26,4 +26,10 @@ export class ManagerFeedbacksController {
   async getOne(@Param('id') id: number) {
     return await this.managerFeedbacksService.getOne(id);
   }
+
+  @Delete(':id')
+  async delete(@Param('id') id: number) {
+    return await this.managerFeedbacksService.delete(id);
+  }
+
 }

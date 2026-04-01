@@ -15,12 +15,12 @@ export class UsersController {
     @Get()
     @UseGuards(JwtAuthGuard)
     async getProfile(@CurrentUser() user: UsersEntity, @Headers('lang') lang: LangEnum) {
-        return await this.usersService.getProfile(user.id, lang)
+        return await this.usersService.getProfile(user.id, lang, true)
     }
 
     @Get(':id')
     async getProfileById(@Headers('lang') lang: LangEnum, @Param('id') userId: number) {
-        return await this.usersService.getProfile(userId, lang)
+        return await this.usersService.getProfile(userId, lang, false)
     }
 
     @Patch()
@@ -37,7 +37,7 @@ export class UsersController {
 
     @Post('ping')
     @HttpCode(HttpStatus.OK)
-    async pingActiveUsers(@Body('session_id') sessionId: string) {
+    async pingActiveUsers() {
         return this.activeUsersTracker.ping();
     }
 

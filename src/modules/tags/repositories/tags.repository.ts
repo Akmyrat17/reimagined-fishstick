@@ -67,8 +67,14 @@ export class TagsRepository extends Repository<TagsEntity> {
     }
 
     async getWithoutPagination() {
-        return await this.createQueryBuilder('t')
+        const data = await this.createQueryBuilder('t')
             .select(['t.id', 't.name'])
-            .getMany()
+            .addSelect('COUNT(qt.question_id)', 'question_count')
+            .innerJoin('question_tags', 'qt', 'qt.tag_id = t.id')
+            .groupBy('t.id')
+            .orderBy('question_count', 'DESC')
+            .getRawMany()
+
+        return data.map(({ t_id, t_name }) => ({ id: t_id, name: t_name }));
     }
 }

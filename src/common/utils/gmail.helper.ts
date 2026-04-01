@@ -248,4 +248,59 @@ export class GmailHelper {
 
     await transporter.sendMail(mailOptions);
   }
+  public static async SendPasswordResetEmail(email: string, resetUrl: string) {
+    const transporter = this.getTransporter();
+    const t = GMAIL_TEXTS.PASSWORD_RESET;
+
+    const mailOptions = {
+      from: this.getSender(),
+      to: email,
+      subject: GMAIL_SUBJECTS.PASSWORD_RESET,
+      html: `
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="utf-8"></head>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto;">
+                    <tr>
+                        <td style="padding: 20px;">
+                            <h2 style="color: #333; margin-bottom: 20px;">${t.HEADING}</h2>
+                            <p style="margin-bottom: 30px;">${t.BODY}</p>
+                            <table cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                                <tr>
+                                    <td style="border-radius: 4px; background-color: #f44336;">
+                                        <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 16px;">
+                                            ${t.BUTTON}
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="color: #666; font-size: 12px; margin-top: 30px;">${t.FALLBACK}</p>
+                            <p style="color: #666; font-size: 12px; word-break: break-all;">${resetUrl}</p>
+                            <p style="color: #666; font-size: 12px; margin-top: 30px;">${t.FOOTER}</p>
+                        </td>
+                    </tr>
+                </table>
+            </body>
+            </html>
+        `,
+    };
+
+    await transporter.sendMail(mailOptions);
+  }
+
+  public static MaskEmail(email: string): string {
+    const [name, domain] = email.split('@');
+
+    if (!name || !domain) return email;
+
+    if (name.length <= 2) {
+      return `${name[0] || ''}*@${domain}`;
+    }
+
+    const visible = name.slice(0, 2);
+    const hidden = '*'.repeat(name.length - 2);
+
+    return `${visible}${hidden}@${domain}`;
+  }
 }

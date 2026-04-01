@@ -7,6 +7,7 @@ import { UpdateUserDto } from "../dtos/update-user.dto";
 import { QuestionsService } from "src/modules/questions/services/questions.service";
 import { AnswersService } from "src/modules/answers/services/answers.service";
 import { VotesRepository } from "src/modules/votes/repositories/votes.repository";
+import { GmailHelper } from "src/common/utils/gmail.helper";
 @Injectable()
 export class UsersService {
     constructor(
@@ -16,10 +17,11 @@ export class UsersService {
         private readonly votesRepository: VotesRepository
     ) { }
 
-    async getProfile(id: number, lang: LangEnum) {
+    async getProfile(id: number, lang: LangEnum, showFullEmail: boolean) {
         try {
             const user = await this.usersRepository.getProfile(id, lang)
             if (!user) throw new UnauthorizedException('User not found')
+            if (!showFullEmail) user.email = GmailHelper.MaskEmail(user.email)
             const mapped = UsersMapper.responseProfile(user, lang)
             return mapped
         } catch (error) {

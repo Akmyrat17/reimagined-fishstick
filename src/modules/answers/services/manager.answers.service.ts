@@ -50,4 +50,13 @@ export class ManagerAnswersService {
       throw new BadRequestException(error.detail || error.message);
     }
   }
+
+  async getTotal() {
+    try {
+      return await this.managerAnswersRepository.getTotal();
+    } catch (error) {
+      console.error(error);
+      throw new BadRequestException(error.detail || error.message);
+    }
+  }
 }

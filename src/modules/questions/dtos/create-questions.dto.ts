@@ -18,10 +18,6 @@ export class QuestionsCreateDto {
   @IsNumber()
   address_id: number
 
-  @IsOptional()
-  @IsArray()
-  image_urls: string[];
-
   @IsArray()
   @IsOptional()
   tag_ids: number[]

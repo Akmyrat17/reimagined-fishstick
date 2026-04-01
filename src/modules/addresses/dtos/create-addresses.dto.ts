@@ -13,11 +13,11 @@ export class AddressesCreateDto {
     @IsString()
     district: string
 
-    @IsNotEmpty()
+    @IsOptional()
     @IsNumber()
     latitude?: number
 
-    @IsNotEmpty()
+    @IsOptional()
     @IsNumber()
     longitude?: number
 }

@@ -10,6 +10,8 @@ import { BullModule } from '@nestjs/bullmq';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { ActiveUsersTracker } from './modules/users/services/active-users-tracker.service';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -59,7 +61,19 @@ import { ActiveUsersTracker } from './modules/users/services/active-users-tracke
           },
         };
       },
-    })
+    }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,   // 1 minute in ms
+        limit: 200,    // 20 requests per IP
+      },
+    ]),
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,  // applies globally to all routes
+    },
   ],
 })
 export class AppModule implements NestModule {

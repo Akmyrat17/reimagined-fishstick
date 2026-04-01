@@ -27,7 +27,6 @@ export class AuthController {
   }
 
   @Get('verify-email/:token')
-  @HttpCode(HttpStatus.OK)
   async verifyEmail(@Param('token') token: string, @Res() res: Response) {
     const url = await this.authService.verifyEmail(token);
     return res.redirect(url)
@@ -39,9 +38,26 @@ export class AuthController {
     return this.authService.refreshToken(refreshToken);
   }
 
+  @Post('send-reset-verification')
+  @HttpCode(HttpStatus.OK)
+  async sendResetVerification(@Body('email') email: string) {
+    return this.authService.sendResetVerification(email)
+  }
+
+  @Get('verify-reset/:token')
+  async verifyReset(@Param('token') token: string, @Res() res: Response) {
+    const redirecUrl = await this.authService.verifyReset(token)
+    return res.redirect(redirecUrl)
+  }
+
+  // @Get('check-reset-verification')
+  // async checkResetVerification(@Body('email') email: string) {
+  //   return this.authService.checkResetVerification(email)
+  // }
+
   @Post('reset-password')
-  async resetPassword(@Body() dto: ResetPasswordDto, @Res() res: Response) {
-    const url = await this.authService.resetPassword(dto);
-    return res.redirect(url)
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto)
   }
 }

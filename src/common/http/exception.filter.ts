@@ -101,10 +101,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
           401,
         );
       } else {
+        console.log('Exception in filter: ', exception);
+        const status = exception.status;
         httpAdapter.reply(
           response,
           {
-            statusCode: 400,
+            statusCode: status,
             method: request.method,
             path: request.url,
             time: new Date().getTime(),
@@ -112,7 +114,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
               ? exception.response.message
               : exception.message,
           },
-          400,
+          status,
         );
       }
     } else {

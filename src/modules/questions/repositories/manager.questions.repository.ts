@@ -74,10 +74,25 @@ export class ManagerQuestionsRepository extends Repository<QuestionsEntity> {
       .update()
       .set({ special: null })
       .where('questions.special = :date', { date })
-      .andWhere('questions.deleted_at IS NULL')
       .returning('id')
       .execute()
 
     return result.raw[0]?.id ?? null
+  }
+
+  // total and total unanswered questions for dashboard stats
+  async getTotalQuestions() {
+    const result = await this.createQueryBuilder('questions')
+      .leftJoin('questions.answers', 'answers')
+      .select("COUNT(DISTINCT questions.id)", "total")
+      .addSelect(
+        "COUNT(DISTINCT CASE WHEN answers.id IS NULL THEN questions.id END)",
+        "total_unanswered"
+      )
+      .addSelect("COUNT(DISTINCT CASE WHEN questions.check_status = 'approved' THEN questions.id END)", "total_approved")
+      .addSelect("COUNT(DISTINCT CASE WHEN questions.check_status = 'not-checked' THEN questions.id END)", "total_not_checked")
+      .addSelect("COUNT(DISTINCT CASE WHEN questions.check_status = 'reported' THEN questions.id END)", "total_reported")
+      .getRawOne();
+    return result;
   }
 }

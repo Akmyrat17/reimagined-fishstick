@@ -31,11 +31,11 @@ export class QuestionsService {
     return QuestionsMapper.toResponseDetail(entity, lang);
   }
 
-  async update(id: number, dto: QuestionsUpdateDto, userId: number, lang: LangEnum): Promise<QuestionsResponseDto> {
+  async update(id: number, dto: QuestionsUpdateDto, user: UsersEntity, lang: LangEnum): Promise<QuestionsResponseDto> {
     try {
-      const existing = await this.questionsRepository.findOne({ where: { id, asked_by: { id: userId } } });
+      const existing = await this.questionsRepository.findOne({ where: { id, asked_by: { id: user.id } } });
       if (!existing) throw new NotFoundException('Question not found');
-      const mapped = QuestionsMapper.toUpdate(dto, id);
+      const mapped = QuestionsMapper.toUpdate(dto, id, user.role);
       if (dto.content && existing.content !== dto.content) {
         const existingImageUrls = ImageHelper.extractImageUrls(existing.content);
         const newImageUrls = ImageHelper.extractImageUrls(dto.content);
@@ -106,8 +106,8 @@ export class QuestionsService {
     return await this.questionsRepository.getLastHourQuestions();
   }
 
-  async myQuestions(userId: number, dto: PaginationRequestDto, lang?: LangEnum) {
-    const [entities, count] = await this.questionsRepository.getMyQuestions(userId, dto.page, dto.limit)
+  async questionsByUserId(userId: number, dto: PaginationRequestDto, isApproved: boolean, lang?: LangEnum) {
+    const [entities, count] = await this.questionsRepository.questionsByUserId(userId, dto.page, dto.limit, isApproved)
     const mapped = entities.map(q => QuestionsMapper.toResponseRaw(q, userId, lang))
     return new PaginationResponse(mapped, count, dto.page, dto.limit)
   }

@@ -7,6 +7,7 @@ export const GMAIL_SUBJECTS = {
     FEEDBACK_REPLY: 'Hatyňyza jogap',
     QUESTION_STATUS_CHANGE: 'Soragyňyzyň status-y üýtgedi',
     NEW_QUESTION_NOTIFICATION: 'Size gyzykly bolup biljek täze sorag',
+    PASSWORD_RESET: 'Açar sözüňizi täzeläň',
 };
 
 export const GMAIL_STATUS_COLORS: Record<CheckStatusEnum, string> = {
@@ -24,9 +25,9 @@ export const GMAIL_STATUS_LABELS: Record<CheckStatusEnum, string> = {
 export const GMAIL_TEXTS = {
     VERIFICATION: {
         HEADING: 'Hoş Geldiňiz!',
-        BODY: 'Aşaky düwmejige basyp elektron poçtaňyzy tassyklaň:',
+        BODY: 'Eger-de ulanyjy düzgünleri bilen razy bolsaňyz düwmejige basyp elektron poçtaňyzy tassyklaň:<br><br> "Nädip" platformasyny (indiden beýläk "platforma") peýdalanýan şahs (indiden beýläk "ulanyjy")   	iki tarapyň hem howpsuzlygyny üpjün etmek maksady bilen şu aşakdaky şertleri we düzgünleri berjaý etmäge borçludyr. <a href="https://nadip.info/terms-of-use">Ulanyjy düzgünlerini</a> doly okaň',
         BUTTON: 'Elektron poçta tassyklamak',
-        FALLBACK: "Eger-de düwmejik işlemese, onda aşaky giperbaglanyşyk basy barlap görüň:",
+        FALLBACK: "Eger-de düwmejik işlemese, onda aşaky gipersalgylanma basyp barlap görüň:",
     },
     FEEDBACK_REPLY: {
         HEADING: 'Teswiriňiz üçin sag boluň!',
@@ -50,6 +51,13 @@ export const GMAIL_TEXTS = {
         TAGS_LABEL: 'Degişli kategoriýasy:',
         BUTTON: 'Soragy görmek',
         FOOTER: "Eger-de bize degişli soraglaryňyz bar bolsa, onda ýüz tutmana çekinmäň!",
+    },
+    PASSWORD_RESET: {
+        HEADING: 'Açar sözi täzelemek',
+        BODY: 'Açar sözüňizi täzelemek üçin aşaky düwmejige basyň. Bu gipersalgylanma 5 minutdan soň işlemez.',
+        BUTTON: 'Açar sözi täzelemek',
+        FALLBACK: "Eger-de düwmejik işlemese, onda aşaky gipersalgylanma basyp barlap görüň:",
+        FOOTER: 'Eger-de siz bu talaby ibermedik bolsaňyz, onda bu haty görmezden geçiň — açar sözüňiz üýtgemez.',
     },
     GENERAL_NOTIFICATION: {
         FOOTER: 'Bu hatymyza hökmany jogap bermek gerek däl. Bu duýduryjy ýa-da ş.m hatlaryň biridir! Nädip.',

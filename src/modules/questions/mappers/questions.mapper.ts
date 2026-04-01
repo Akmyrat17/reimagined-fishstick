@@ -7,7 +7,7 @@ import { UsersMapper } from "src/modules/users/mappers";
 import { AnswersMapper } from "src/modules/answers/mappers/answers.mapper";
 import { TagsEntity } from "src/modules/tags/entities/tags.entity";
 import { TagsMapper } from "src/modules/tags/mappers/tags.mapper";
-import { CheckStatusEnum, LangEnum } from "src/common/enums";
+import { CheckStatusEnum, LangEnum, RolesEnum } from "src/common/enums";
 import { AddressesEntity } from "src/modules/addresses/entities/addresses.entity";
 
 export class QuestionsMapper {
@@ -22,14 +22,14 @@ export class QuestionsMapper {
         return entity
     }
 
-    public static toUpdate(dto: QuestionsUpdateDto, id: number) {
+    public static toUpdate(dto: QuestionsUpdateDto, id: number, userRole: RolesEnum) {
         const entity = new QuestionsEntity({ id })
         if (dto.content) entity.content = dto.content
         if (dto.title) entity.title = dto.title
         if (dto.address_id) entity.address = new AddressesEntity({ id: dto.address_id })
         if (dto.priority) entity.priority = dto.priority
         if (dto.tag_ids) entity.tags = dto.tag_ids.map(tag => new TagsEntity({ id: tag }))
-        entity.check_status = CheckStatusEnum.NOT_CHECKED
+        if (userRole !== RolesEnum.ADMIN) entity.check_status = CheckStatusEnum.NOT_CHECKED
         entity.special = null
         return entity
     }
@@ -86,6 +86,7 @@ export class QuestionsMapper {
         dto.priority = entity.priority
         dto.special = entity.special
         dto.title = entity.title
+        dto.check_status = entity.check_status
         dto.image_paths = entity.image_paths
         dto.content = entity.content
         dto.tags = entity.tags && entity.tags.length > 0 ? entity.tags.map(t => TagsMapper.toResponse(t, lang)) : []
@@ -97,8 +98,8 @@ export class QuestionsMapper {
         dto.current_user_vote = entity.current_user_vote
         dto.total_votes_count = entity.total_votes_count
         dto.created_at = entity.created_at
-        dto.answers = entity.answers && entity.answers.length > 0 ? entity.answers.map(e => AnswersMapper.toResponseRaw(e)) : []
-        dto.current_user_answered = userId && entity.answers && entity.answers.length > 0
+        // dto.answers = entity.answers && entity.answers.length > 0 ? entity.answers.map(e => AnswersMapper.toResponseRaw(e)) : []
+        dto.current_user_answered = entity.current_user_answered ? true : false
             ? entity.answers.some(a => a.answered_by?.id === userId)
             : false
         return dto

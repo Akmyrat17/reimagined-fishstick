@@ -6,19 +6,22 @@ import { AnswersUpdateDto } from "../dtos/update-answers.dto";
 import { AnswersResponseDto } from "../dtos/response-answers.dto";
 import { QuestionsMapper } from "src/modules/questions/mappers/questions.mapper";
 import { UsersMapper } from "src/modules/users/mappers/users.mapper";
+import { CheckStatusEnum, RolesEnum } from "src/common/enums";
 
 export class AnswersMapper {
-    public static toCreate(dto: AnswersCreateDto, userId: number) {
+    public static toCreate(dto: AnswersCreateDto, userId: number, userRole: RolesEnum) {
         const entity = new AnswersEntity()
         entity.answered_by = new UsersEntity({ id: userId })
         entity.question = new QuestionsEntity({ id: dto.question_id })
         entity.content = dto.content
+        if (userRole === RolesEnum.ADMIN) entity.check_status = CheckStatusEnum.APPROVED
         return entity
     }
 
-    public static toUpdate(dto: AnswersUpdateDto, id: number) {
+    public static toUpdate(dto: AnswersUpdateDto, id: number, userRole: RolesEnum) {
         const entity = new AnswersEntity({ id })
         if (dto.content) entity.content = dto.content
+        if (userRole !== RolesEnum.ADMIN) entity.check_status = CheckStatusEnum.NOT_CHECKED
         return entity
     }
 
@@ -53,6 +56,20 @@ export class AnswersMapper {
         dto.upvotes_count = upvotes
         dto.downvotes_count = downvotes
         dto.current_user_vote = entity.user_vote
+        return dto
+    }
+
+    public static toResponseRawForQuestionDetail(entity: any) {
+        const dto = new AnswersResponseDto()
+        dto.id = entity.answers_id
+        dto.content = entity.answers_content
+        dto.created_at = entity.answers_created_at
+        dto.check_status = entity.answers_check_status
+        dto.upvotes_count = entity.upvotes
+        dto.downvotes_count = entity.downvotes
+        dto.current_user_vote = entity.user_vote !== undefined ? entity.user_vote : null
+        dto.total_votes_count = entity.total_votes
+        dto.answered_by = UsersMapper.toResponseSimple(new UsersEntity({ id: entity.answered_by_id, fullname: entity.answered_by_fullname }))
         return dto
     }
 }

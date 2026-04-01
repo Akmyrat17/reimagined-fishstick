@@ -38,6 +38,12 @@ export class ManagerQuestionsController {
         return this.managerQuestionsService.getAll(paginationQuery, lang);
     }
 
+    @Get('total')
+    @Permissions('questions.get-total')
+    async getTotal() {
+        return await this.managerQuestionsService.getTotalQuestions();
+    }
+
     @Get(':id')
     @Permissions('questions.get-one')
     async findOne(@Param('id', ParseIntPipe) id: number, @Headers('lang') lang: LangEnum) {

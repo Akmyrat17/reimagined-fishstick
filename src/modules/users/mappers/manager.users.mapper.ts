@@ -53,6 +53,7 @@ export class ManagerUsersMapper {
     const dto = new UsersResponseDto();
     dto.id = entity.id;
     dto.age = entity.age;
+    dto.role = entity.role;
     dto.email = entity.email;
     dto.fullname = entity.fullname;
     dto.created_at = entity.created_at;

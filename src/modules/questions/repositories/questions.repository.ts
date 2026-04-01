@@ -17,8 +17,8 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
     async findAll(dto: QuestionsQueryDto, currentUserId?: number): Promise<[QuestionsEntity[], number]> {
         const { keyword, page, limit, sort, priority, filters, tag_ids } = dto;
         const query = this.createQueryBuilder('questions')
-            .innerJoin('questions.asked_by', 'asked_by', 'asked_by.deleted_at IS NULL')
-            .leftJoin('questions.answers', 'answers', 'answers.deleted_at IS NULL')
+            .innerJoin('questions.asked_by', 'asked_by')
+            .leftJoin('questions.answers', 'answers', 'answers.check_status = :approvedStatus', { approvedStatus: CheckStatusEnum.APPROVED })
             .leftJoin('questions.seen', 'seen')
             .leftJoin('votes', 'v', 'v.target_id = questions.id AND v.type = :type', { type: VotesTypeEnum.QUESTIONS })
             .select(['questions.id', 'questions.priority', 'questions.special', 'questions.content', 'questions.title', 'questions.created_at'])
@@ -32,7 +32,6 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
                 WHERE v.target_id = questions.id 
                 AND v.type = 'questions' 
                 AND v.vote = 1
-                AND v.deleted_at IS NULL
             )`,
                 'upvotes_count'
             )
@@ -43,7 +42,6 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
                 WHERE v.target_id = questions.id 
                 AND v.type = 'questions' 
                 AND v.vote = 0
-                AND v.deleted_at IS NULL
             )`,
                 'downvotes_count'
             )
@@ -53,7 +51,6 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
                 FROM votes v 
                 WHERE v.target_id = questions.id 
                 AND v.type = 'questions'
-                AND v.deleted_at IS NULL
             )`,
                 'total_votes_count'
             )
@@ -67,7 +64,7 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
                         )
                     )
                     FROM question_tags qt
-                    INNER JOIN tags t ON t.id = qt.tag_id AND t.deleted_at IS NULL
+                    INNER JOIN tags t ON t.id = qt.tag_id 
                     WHERE qt.question_id = questions.id
                 ),
                 '[]'::json
@@ -83,7 +80,6 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
                 WHERE v.target_id = questions.id 
                 AND v.type = 'questions' 
                 AND v.user_id = ${currentUserId}
-                AND v.deleted_at IS NULL
                 LIMIT 1
             )`,
                 'current_user_vote'
@@ -112,7 +108,6 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
         }
 
         query.andWhere('questions.check_status = :value', { value: CheckStatusEnum.APPROVED });
-        query.andWhere('questions.deleted_at IS NULL');
 
         switch (filters) {
             case QuestionsFilterEnum.SEEN:
@@ -134,8 +129,8 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
 
         // Get count
         const countQuery = this.createQueryBuilder('questions')
-            .innerJoin('questions.asked_by', 'asked_by', 'asked_by.deleted_at IS NULL')
-            .leftJoin('questions.answers', 'answers', 'answers.deleted_at IS NULL')
+            .innerJoin('questions.asked_by', 'asked_by')
+            .leftJoin('questions.answers', 'answers')
             .leftJoin('questions.seen', 'seen')
             .select('COUNT(DISTINCT questions.id)', 'count');
 
@@ -160,7 +155,6 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
         }
 
         countQuery.andWhere('questions.check_status = :value', { value: CheckStatusEnum.APPROVED });
-        countQuery.andWhere('questions.deleted_at IS NULL');
 
         switch (filters) {
             case QuestionsFilterEnum.SEEN:
@@ -255,8 +249,8 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
 
         // Build the main query
         const query = this.createQueryBuilder('questions')
-            .innerJoin('questions.asked_by', 'asked_by', 'asked_by.deleted_at IS NULL')
-            .leftJoin('questions.answers', 'answers', 'answers.deleted_at IS NULL')
+            .innerJoin('questions.asked_by', 'asked_by')
+            .leftJoin('questions.answers', 'answers')
             .leftJoin('questions.seen', 'seen')
             .leftJoin('votes', 'v', 'v.target_id = questions.id AND v.type = :type', { type: VotesTypeEnum.QUESTIONS })
             .innerJoin('questions.tags', 'question_tags')
@@ -277,7 +271,7 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
                         )
                     )
                     FROM question_tags qt
-                    INNER JOIN tags t ON t.id = qt.tag_id AND t.deleted_at IS NULL
+                    INNER JOIN tags t ON t.id = qt.tag_id
                     WHERE qt.question_id = questions.id
                 ),
                 '[]'::json
@@ -300,7 +294,6 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
         query.where('questions.id != :questionId', { questionId })
             .andWhere('question_tags.id IN (:...tagIds)', { tagIds })
             .andWhere('questions.check_status = :value', { value: CheckStatusEnum.APPROVED })
-            .andWhere('questions.deleted_at IS NULL');
 
         // Count query
         const countQuery = this.createQueryBuilder('questions')
@@ -309,7 +302,6 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
             .where('questions.id != :questionId', { questionId })
             .andWhere('question_tags.id IN (:...tagIds)', { tagIds })
             .andWhere('questions.check_status = :value', { value: CheckStatusEnum.APPROVED })
-            .andWhere('questions.deleted_at IS NULL');
 
         const countResult = await countQuery.getRawOne();
         const count = parseInt(countResult.count);
@@ -328,14 +320,10 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
         return [entities, count];
     }
 
-    async getMyQuestions(
-        userId: number,
-        page: number,
-        limit: number
-    ): Promise<[any[], number]> {
+    async questionsByUserId(userId: number, page: number, limit: number, isApproved: boolean): Promise<[any[], number]> {
         const query = this.createQueryBuilder('questions')
-            .innerJoin('questions.asked_by', 'asked_by', 'asked_by.deleted_at IS NULL')
-            .leftJoin('questions.answers', 'answers', 'answers.deleted_at IS NULL')
+            .innerJoin('questions.asked_by', 'asked_by')
+            .leftJoin('questions.answers', 'answers')
             .leftJoin('questions.seen', 'seen')
             .leftJoin('votes', 'v', 'v.target_id = questions.id AND v.type = :type', { type: VotesTypeEnum.QUESTIONS })
             .select([
@@ -364,7 +352,7 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
                         )
                     )
                     FROM question_tags qt
-                    INNER JOIN tags t ON t.id = qt.tag_id AND t.deleted_at IS NULL
+                    INNER JOIN tags t ON t.id = qt.tag_id
                     WHERE qt.question_id = questions.id
                 ),
                 '[]'::json
@@ -378,14 +366,15 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
 
         // Only filter by user and soft delete
         query.where('questions.asked_by_id = :userId', { userId })
-            .andWhere('questions.deleted_at IS NULL');
-
         // Count query
         const countQuery = this.createQueryBuilder('questions')
             .select('COUNT(questions.id)', 'count')
             .where('questions.asked_by_id = :userId', { userId })
-            .andWhere('questions.deleted_at IS NULL');
 
+        if (isApproved) {
+            query.andWhere('questions.check_status = :status', { status: CheckStatusEnum.APPROVED });
+            countQuery.andWhere('questions.check_status = :status', { status: CheckStatusEnum.APPROVED });
+        }
         const countResult = await countQuery.getRawOne();
         const count = parseInt(countResult.count);
 
@@ -404,9 +393,6 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
 
     async getOne(id: number, userId?: number) {
         try {
-            const userVoteSubquery = userId
-                ? `(SELECT v.vote FROM votes v WHERE v.target_id = a.id AND v.type = '${VotesTypeEnum.ANSWERS}' AND v.user_id = ${userId} LIMIT 1)`
-                : 'NULL'
             const userQuestionVoteSubquery = userId
                 ? `(SELECT v.vote FROM votes v WHERE v.target_id = q.id AND v.type = '${VotesTypeEnum.QUESTIONS}' AND v.user_id = ${userId} LIMIT 1)`
                 : 'NULL'
@@ -417,22 +403,21 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
                 q.title,
                 q.content,
                 q.priority,
+                q.check_status,
                 q.special,
                 q.created_at,
                 
-                -- Question vote stats (using subqueries instead of SUM with v table)
                 COALESCE((SELECT COUNT(*) FROM votes v WHERE v.target_id = q.id AND v.type = '${VotesTypeEnum.QUESTIONS}' AND v.vote = 1), 0) as upvotes_count,
                 COALESCE((SELECT COUNT(*) FROM votes v WHERE v.target_id = q.id AND v.type = '${VotesTypeEnum.QUESTIONS}' AND v.vote = 0), 0) as downvotes_count,
                 COALESCE((SELECT SUM(CASE WHEN v.vote = 1 THEN 1 WHEN v.vote = 0 THEN -1 ELSE 0 END) FROM votes v WHERE v.target_id = q.id AND v.type = '${VotesTypeEnum.QUESTIONS}'), 0) as total_votes_count,
                 
                 ${userQuestionVoteSubquery} as current_user_vote,
                 
-                -- User object
                 json_build_object(
                     'id', u.id,
                     'fullname', u.fullname
                 ) as asked_by,
-                -- Address object
+                
                 CASE 
                     WHEN addr.id IS NOT NULL THEN 
                         json_build_object(
@@ -445,8 +430,9 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
                         )
                     ELSE NULL
                 END as address,
+                
                 (SELECT COUNT(*) FROM questions_seen qs WHERE qs.question_id = q.id) as seen_count,
-                -- Tags array
+                
                 COALESCE(
                     (
                         SELECT json_agg(
@@ -456,40 +442,23 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
                             )
                         )
                         FROM question_tags qt
-                        INNER JOIN tags t ON t.id = qt.tag_id AND t.deleted_at IS NULL
+                        INNER JOIN tags t ON t.id = qt.tag_id
                         WHERE qt.question_id = q.id
                     ),
                     '[]'::json
                 ) as tags,
-                -- Answers array
-                COALESCE(
-                    json_agg(
-                        json_build_object(
-                            'id', a.id,
-                            'content', a.content,
-                            'created_at', a.created_at,
-                            'answered_by', json_build_object(
-                                'id', au.id,
-                                'fullname', au.fullname
-                            ),
-                            'vote_stats', json_build_object(
-                            'upvotes', COALESCE((SELECT COUNT(*) FROM votes v WHERE v.target_id = a.id AND v.type = '${VotesTypeEnum.ANSWERS}' AND v.vote = 1), 0),
-                            'downvotes', COALESCE((SELECT COUNT(*) FROM votes v WHERE v.target_id = a.id AND v.type = '${VotesTypeEnum.ANSWERS}' AND v.vote = 0), 0),
-                            'total_votes', COALESCE((SELECT SUM(CASE WHEN v.vote = 1 THEN 1 WHEN v.vote = 0 THEN -1 ELSE 0 END) FROM votes v WHERE v.target_id = a.id AND v.type = '${VotesTypeEnum.ANSWERS}'), 0)
-                            ),
-                            'user_vote', ${userVoteSubquery}
-                        )
-                        ORDER BY a.created_at DESC
-                    ) FILTER (WHERE a.id IS NOT NULL),
-                    '[]'::json
-                ) as answers
+                
+                (
+                    SELECT COUNT(*) > 0 
+                    FROM answers a2 
+                    WHERE a2.question_id = q.id 
+                    AND a2.answered_by_id = ${userId || null}
+                ) as current_user_answered
+                
             FROM questions q
-            LEFT JOIN users u ON q.asked_by_id = u.id AND u.deleted_at IS NULL
-            LEFT JOIN addresses addr ON q.address_id = addr.id AND addr.deleted_at IS NULL
-            LEFT JOIN answers a ON a.question_id = q.id AND a.deleted_at IS NULL
-            LEFT JOIN users au ON a.answered_by_id = au.id AND au.deleted_at IS NULL
+            LEFT JOIN users u ON q.asked_by_id = u.id
+            LEFT JOIN addresses addr ON q.address_id = addr.id
             WHERE q.id = $1 
-                AND q.deleted_at IS NULL
                 AND (q.check_status = $2 OR q.asked_by_id = $3)
             GROUP BY q.id, u.id, addr.id
         `
@@ -516,14 +485,13 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
         FROM questions 
         WHERE created_at >= NOW() - INTERVAL '1 hour' 
         AND check_status = '${CheckStatusEnum.APPROVED}'
-        AND deleted_at IS NULL
     `)
     }
 
     async findSpecial(): Promise<QuestionsEntity[]> {
         const query = this.createQueryBuilder('questions')
-            .innerJoin('questions.asked_by', 'asked_by', 'asked_by.deleted_at IS NULL')
-            .leftJoin('questions.answers', 'answers', 'answers.deleted_at IS NULL')
+            .innerJoin('questions.asked_by', 'asked_by')
+            .leftJoin('questions.answers', 'answers')
             .leftJoin('questions.seen', 'seen')
             .select(['questions.id', 'questions.priority', 'questions.special::text', 'questions.content', 'questions.title', 'questions.created_at'])
             .addSelect(['asked_by.id', 'asked_by.fullname'])
@@ -534,7 +502,7 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
                 (
                     SELECT json_agg(json_build_object('id', t.id, 'name', t.name))
                     FROM question_tags qt
-                    INNER JOIN tags t ON t.id = qt.tag_id AND t.deleted_at IS NULL
+                    INNER JOIN tags t ON t.id = qt.tag_id
                     WHERE qt.question_id = questions.id
                 ),
                 '[]'::json
@@ -543,7 +511,6 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
             )
             .where('questions.special IS NOT NULL')
             .andWhere('questions.check_status = :value', { value: CheckStatusEnum.APPROVED })
-            .andWhere('questions.deleted_at IS NULL')
             .groupBy('questions.id')
             .addGroupBy('asked_by.id')
             .orderBy('questions.special', 'DESC')

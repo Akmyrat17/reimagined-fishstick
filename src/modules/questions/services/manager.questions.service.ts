@@ -33,6 +33,14 @@ export class ManagerQuestionsService {
     return saved;
   }
 
+  async getTotalQuestions() {
+    try {
+      return await this.managerQuestionsRepository.getTotalQuestions();
+    } catch (error) {
+      console.error(error);
+      throw new BadRequestException(error.detail || error.message);
+    }
+  }
   async update(dto: QuestionsUpdateDto, questionId: number) {
     try {
       const question = await this.managerQuestionsRepository.findOne({ where: { id: questionId }, relations: ['asked_by', 'tags'] });
