@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 import { RolesEnum } from 'src/common/enums';
 
 export class UpdateUserDto {
@@ -33,4 +33,9 @@ export class UpdateUserDto {
 
     @IsOptional()
     permission_ids: number[]
+
+    // add is blocked with transform to boolean
+    @IsOptional()
+    @IsBoolean()
+    is_blocked: boolean
 }

@@ -289,6 +289,87 @@ export class GmailHelper {
     await transporter.sendMail(mailOptions);
   }
 
+  public static async SendNotificationToSpecificEmail(email: string, title: string, body: string) {
+    const transporter = this.getTransporter();
+    const t = GMAIL_TEXTS.GENERAL_NOTIFICATION;
+
+    const mailOptions = {
+      from: this.getSender(),
+      to: email,  // ✅ single email, not bcc
+      subject: title,
+      html: `
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="utf-8"></head>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto;">
+                    <tr>
+                        <td style="padding: 20px;">
+                            <h2 style="color: #333; margin-bottom: 20px;">${title}</h2>
+                            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 4px; margin-bottom: 20px;">
+                                <p style="margin: 0; color: #333; white-space: pre-wrap;">${body}</p>
+                            </div>
+                            <p style="color: #666; font-size: 12px; margin-top: 30px;">${t.FOOTER}</p>
+                        </td>
+                    </tr>
+                </table>
+            </body>
+            </html>
+        `,
+    };
+
+    await transporter.sendMail(mailOptions);
+  }
+
+  public static async SendAnswerStatusChangeEmail(email: string, questionTitle: string, oldStatus: CheckStatusEnum, newStatus: CheckStatusEnum, reportedReason?: string) {
+    const transporter = this.getTransporter();
+    const t = GMAIL_TEXTS.ANSWER_STATUS_CHANGE;
+
+    const mailOptions = {
+      from: this.getSender(),
+      to: email,
+      subject: GMAIL_SUBJECTS.ANSWER_STATUS_CHANGE,
+      html: `
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="utf-8"></head>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto;">
+                    <tr>
+                        <td style="padding: 20px;">
+                            <h2 style="color: #333; margin-bottom: 20px;">${t.HEADING}</h2>
+                            <p style="margin-bottom: 20px;">${t.BODY}</p>
+                            <div style="background-color: #f5f5f5; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                                <p style="margin: 0; color: #666; font-size: 14px; font-weight: bold;">${t.QUESTION_LABEL}</p>
+                                <p style="margin: 10px 0 0 0; color: #333; font-weight: bold;">${questionTitle}</p>
+                            </div>
+                            <div style="margin-bottom: 20px;">
+                                <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">${t.STATUS_FROM_LABEL}</p>
+                                <span style="display: inline-block; padding: 6px 12px; background-color: ${GMAIL_STATUS_COLORS[oldStatus]}; color: white; border-radius: 4px; font-size: 14px; font-weight: bold;">
+                                    ${GMAIL_STATUS_LABELS[oldStatus]}
+                                </span>
+                                <span style="margin: 0 10px; color: #666;">→</span>
+                                <span style="display: inline-block; padding: 6px 12px; background-color: ${GMAIL_STATUS_COLORS[newStatus]}; color: white; border-radius: 4px; font-size: 14px; font-weight: bold;">
+                                    ${GMAIL_STATUS_LABELS[newStatus]}
+                                </span>
+                            </div>
+                            ${newStatus === CheckStatusEnum.REPORTED && reportedReason ? `
+                            <div style="background-color: #fff3f3; border-left: 4px solid #f44336; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                                <p style="margin: 0; color: #c62828; font-size: 14px; font-weight: bold;">${t.REPORTED_REASON_LABEL}</p>
+                                <p style="margin: 10px 0 0 0; color: #333;">${reportedReason}</p>
+                            </div>
+                            ` : ''}
+                            <p style="color: #666; font-size: 12px; margin-top: 30px;">${t.FOOTER}</p>
+                        </td>
+                    </tr>
+                </table>
+            </body>
+            </html>
+        `,
+    };
+
+    await transporter.sendMail(mailOptions);
+  }
   public static MaskEmail(email: string): string {
     const [name, domain] = email.split('@');
 

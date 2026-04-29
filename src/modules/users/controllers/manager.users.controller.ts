@@ -17,6 +17,8 @@ import { AdminGuard } from 'src/common/guards/admin.guard';
 import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/modules/auth/jwt/jwt-auth.guard';
 import { LangEnum } from 'src/common/enums';
+import { SendGmailNotificationDto } from '../dtos/send-gmail-notification.dto';
+import { UsersQueryDto } from '../dtos/query-users.dto';
 
 @Controller({ path: 'manager/users' })
 @UseGuards(JwtAuthGuard, AdminGuard)
@@ -28,10 +30,16 @@ export class ManagerUsersController {
     return this.managerUsersService.create(createUserDto);
   }
 
+  @Post('send-notification')
+  sendNotification(@Body() dto: SendGmailNotificationDto) {
+    return this.managerUsersService.sendNotificationToUser(dto);
+  }
+
   @Get()
-  findAll(@Query() paginationDto: PaginationRequestDto, @Headers('lang') lang: LangEnum) {
+  findAll(@Query() paginationDto: UsersQueryDto, @Headers('lang') lang: LangEnum) {
     return this.managerUsersService.findAll(paginationDto, lang);
   }
+
   @Get('total')
   getTotal() {
     return this.managerUsersService.getTotal();

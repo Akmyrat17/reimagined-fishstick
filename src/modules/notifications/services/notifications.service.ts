@@ -25,7 +25,7 @@ export class NotificcationsService {
                 if (!isRemoved) return NotificationsMapper.toResponseSimple(notification)
             })
             return mapped
-        } catch (error) {
+        } catch (error: any) {
             throw new NotFoundException(error.detail || error.message)
         }
     }

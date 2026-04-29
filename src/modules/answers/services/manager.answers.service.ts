@@ -7,6 +7,9 @@ import { AnswersUpdateDto } from '../dtos/update-answers.dto';
 import { AnswersResponseDto } from '../dtos/response-answers.dto';
 import { AnswersQueryDto } from '../dtos/query-answers.dto';
 import { UsersEntity } from 'src/modules/users/entities/users.entity';
+import { resolveTimeRange } from 'src/common/utils/time-range.helper';
+import { CheckStatusEnum } from 'src/common/enums/check-status.enum';
+import { GmailHelper } from 'src/common/utils/gmail.helper';
 
 @Injectable()
 export class ManagerAnswersService {
@@ -22,8 +25,22 @@ export class ManagerAnswersService {
       const entity = await this.managerAnswersRepository.findOne({ where: { id } })
       if (!entity) throw new NotFoundException()
       const mapped = ManagerAnswersMapper.toUpdate(dto, id)
+      const statusChanged = mapped.check_status && mapped.check_status !== entity.check_status;
+      const shouldNotify = statusChanged && mapped.check_status !== CheckStatusEnum.DELETED && mapped.check_status !== CheckStatusEnum.NOT_CHECKED;
+      if (shouldNotify && entity.answered_by?.email && entity.question?.title) {
+        await GmailHelper.SendAnswerStatusChangeEmail(entity.answered_by.email, entity.question.title, entity.check_status, mapped.check_status, mapped.check_status === CheckStatusEnum.REPORTED ? mapped.reported_reason : undefined)
+      }
       return await this.managerAnswersRepository.save(mapped)
-    } catch (error) {
+    } catch (error: any) {
+      console.error(error);
+      throw new BadRequestException(error.detail || error.message);
+    }
+  }
+  async getAnswersByUserId(userId: number) {
+    try {
+      const entities = await this.managerAnswersRepository.find({ where: { answered_by: { id: userId } }, relations: ['answered_by', 'question'] })
+      return entities.map((entity) => ManagerAnswersMapper.toResponseSimple(entity))
+    } catch (error: any) {
       console.error(error);
       throw new BadRequestException(error.detail || error.message);
     }
@@ -31,10 +48,11 @@ export class ManagerAnswersService {
 
   async getAll(dto: AnswersQueryDto) {
     try {
-      const [entities, total] = await this.managerAnswersRepository.findAll(dto);
+      const { startDate, endDate } = resolveTimeRange(dto.time_range, dto.from, dto.to);
+      const [entities, total] = await this.managerAnswersRepository.findAll(dto, startDate, endDate);
       const mapped = entities.map((entity) => ManagerAnswersMapper.toResponseSimple(entity))
       return new PaginationResponse<AnswersResponseDto>(mapped, total, dto.page, dto.limit)
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       throw new BadRequestException(error.detail || error.message);
     }
@@ -45,7 +63,7 @@ export class ManagerAnswersService {
       const result = await this.managerAnswersRepository.findOne({ where: { id } });
       if (!result) throw new NotFoundException()
       return await this.managerAnswersRepository.delete(id)
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       throw new BadRequestException(error.detail || error.message);
     }
@@ -54,7 +72,7 @@ export class ManagerAnswersService {
   async getTotal() {
     try {
       return await this.managerAnswersRepository.getTotal();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       throw new BadRequestException(error.detail || error.message);
     }

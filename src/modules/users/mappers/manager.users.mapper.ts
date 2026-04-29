@@ -46,8 +46,11 @@ export class ManagerUsersMapper {
       entity.address = new AddressesEntity({ id: dto.address_id });
     if (dto.role) entity.role = dto.role;
     if (dto.age) entity.age = dto.age;
+    console.log(dto.is_blocked);
+    if (dto.is_blocked === true || dto.is_blocked === false) entity.is_blocked = dto.is_blocked;
     return entity;
   }
+
 
   public static toResponseList(entity: UsersEntity, lang: LangEnum) {
     const dto = new UsersResponseDto();
@@ -58,6 +61,8 @@ export class ManagerUsersMapper {
     dto.fullname = entity.fullname;
     dto.created_at = entity.created_at;
     dto.address = entity.address;
+    dto.is_blocked = entity.is_blocked;
+    dto.is_verified = entity.is_verified;
     dto.profession = entity.profession
       ? ManagerProfessionsMapper.toResponseSimple(entity.profession, lang)
       : null;
@@ -74,6 +79,10 @@ export class ManagerUsersMapper {
     dto.id = entity.id;
     dto.age = entity.age;
     dto.email = entity.email;
+    dto.fullname = entity.fullname;
+    dto.is_verified = entity.is_verified;
+    dto.is_blocked = entity.is_blocked;
+    dto.role = entity.role;
     dto.created_at = entity.created_at;
     dto.updated_at = entity.updated_at;
     dto.answers =

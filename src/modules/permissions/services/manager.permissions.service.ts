@@ -38,7 +38,7 @@ export class ManagerPermissionsService {
             return {
                 message: 'Permissions refreshed successfully',
             };
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(error.detail ?? error.message);
             throw new BadRequestException(error.detail ?? error.message);
         }

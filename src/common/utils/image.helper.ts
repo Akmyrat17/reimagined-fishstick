@@ -1,19 +1,34 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
 export class ImageHelper {
-    public static extractImageUrls(htmlContent: string): string[] {
-        if (!htmlContent) return [];
-
-        // ✅ Updated regex to match both ' and "
-        const imgRegex = /<img[^>]+src=["']([^"']+)["']/gi;
+    public static extractImageUrls(content: string): string[] {
+        if (!content) return [];
         const urls: string[] = [];
-        let match;
 
-        while ((match = imgRegex.exec(htmlContent)) !== null) {
+        // Format 1: Raw HTML <img src="..." /> or <img src='...'>
+        const imgRegex = /<img[^>]+src=["']([^"']+)["']/gi;
+        let match;
+        while ((match = imgRegex.exec(content)) !== null) {
             urls.push(match[1]);
         }
 
-        return urls;
+        // Format 2: TipTap/ProseMirror JSON {"type":"image","attrs":{"src":"..."}}
+        try {
+            const parsed = JSON.parse(content);
+            const traverse = (node: any) => {
+                if (node?.type === 'image' && node?.attrs?.src) {
+                    urls.push(node.attrs.src);
+                }
+                if (node?.content?.length) {
+                    node.content.forEach(traverse);
+                }
+            };
+            traverse(parsed);
+        } catch {
+            // not JSON, already handled by regex above
+        }
+
+        return [...new Set(urls)]; // dedupe
     }
 
     public static async deleteImages(imageUrls: string[]): Promise<{ path: string; success: boolean; error?: string }[]> {
@@ -33,7 +48,7 @@ export class ImageHelper {
                 await fs.access(filePath);
                 await fs.unlink(filePath);
                 results.push({ path: imageUrl, success: true });
-            } catch (error) {
+            } catch (error: any) {
                 console.error(`Failed to delete ${imageUrl}:`, error.message);
                 results.push({ path: imageUrl, success: false, error: error.message });
             }

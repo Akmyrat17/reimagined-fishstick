@@ -22,7 +22,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     try {
       const result = await this.managerUsersService.findOneById(payload.id);
       return result; // The returned user object is attached to the request object
-    } catch (error) {
+    } catch (error: any) {
       throw new UnauthorizedException();
     }
   }

@@ -43,7 +43,7 @@ export class AnswersService {
       const [entities, total] = await this.answersRepository.findAll(dto, userId, othersProfileAnswers);
       const mapped = entities.map((entity) => AnswersMapper.toResponseSimple(entity));
       return new PaginationResponse<AnswersResponseDto>(mapped, total, dto.page, dto.limit);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       throw new BadRequestException(error.detail || error.message);
     }
@@ -77,7 +77,7 @@ export class AnswersService {
       const [entities, total] = await this.answersRepository.getByQuestionId(questionId, dto, userId);
       const mapped = entities.map((entity) => AnswersMapper.toResponseRawForQuestionDetail(entity));
       return new PaginationResponse<AnswersResponseDto>(mapped, total, dto.page, dto.limit);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       throw new BadRequestException(error.detail || error.message);
     }

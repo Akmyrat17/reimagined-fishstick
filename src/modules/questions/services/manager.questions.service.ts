@@ -1,9 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ManagerQuestionsRepository } from '../repositories/manager.questions.repository';
 import { QuestionsCreateDto } from '../dtos/create-questions.dto';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
-import { makeSlug } from 'src/common/utils/slug.helper';
 import { ManagerQuestionsMapper } from '../mappers/manager.questions.mapper';
 import { QuestionsEntity } from '../entities/questions.entity';
 import { QuestionsUpdateDto } from '../dtos/update-questions.dto';
@@ -15,6 +12,8 @@ import { CheckStatusEnum, LangEnum, RolesEnum } from 'src/common/enums';
 import { UsersRepository } from 'src/modules/users/repositories/users.repository';
 import { GmailHelper } from 'src/common/utils/gmail.helper';
 import { TagsEntity } from 'src/modules/tags/entities/tags.entity';
+import { TimeRangeDto } from 'src/common/dto/time-range.dto';
+import { ImageHelper } from 'src/common/utils/image.helper';
 
 @Injectable()
 export class ManagerQuestionsService {
@@ -33,14 +32,24 @@ export class ManagerQuestionsService {
     return saved;
   }
 
-  async getTotalQuestions() {
+  async getTotalQuestions(dto: TimeRangeDto) {
     try {
-      return await this.managerQuestionsRepository.getTotalQuestions();
-    } catch (error) {
+      const allTimeData = await this.managerQuestionsRepository.getTotalQuestions();
+      // const { startDate, endDate, truncUnit, labelFormat } = this.resolveDateRange(dto.time_range, dto.from, dto.to);
+      // const filteredData = await this.managerQuestionsRepository.getQuestionsChartData(startDate, endDate, truncUnit, labelFormat);
+      const filteredData = await this.managerQuestionsRepository.getQuestionsLastHourChart();
+      return { allTimeData, filteredData };
+    } catch (error: any) {
       console.error(error);
       throw new BadRequestException(error.detail || error.message);
     }
   }
+
+  async getQuestionsChartData(dto: TimeRangeDto) {
+    const { startDate, endDate, truncUnit, labelFormat } = this.resolveDateRange(dto.time_range, dto.from, dto.to);
+    return this.managerQuestionsRepository.getQuestionsChartData(startDate, endDate, truncUnit, labelFormat);
+  }
+
   async update(dto: QuestionsUpdateDto, questionId: number) {
     try {
       const question = await this.managerQuestionsRepository.findOne({ where: { id: questionId }, relations: ['asked_by', 'tags'] });
@@ -53,7 +62,7 @@ export class ManagerQuestionsService {
       if (dto.special) previousSpecialQuestionId = await this.managerQuestionsRepository.setNullPreviousSpecial(dto.special)
       const updated = await this.managerQuestionsRepository.save(mapped);
       return { updated, previousSpecialQuestionId }
-    } catch (error) {
+    } catch (error: any) {
       throw new BadRequestException(error.detail ? error.detail : error.message)
     }
   }
@@ -67,9 +76,43 @@ export class ManagerQuestionsService {
   }
 
   async getAll(dto: QuestionsQueryDto, lang: LangEnum) {
-    const [entities, total] = await this.managerQuestionsRepository.findAll(dto);
-    const mapped = entities.map((entity) => ManagerQuestionsMapper.toResponseSimple(entity, lang));
-    return new PaginationResponse<QuestionsResponseDto>(mapped, total, dto.page, dto.limit,);
+    try {
+      let startDate: Date | undefined;
+      let endDate: Date | undefined;
+      if (dto.time_range) {
+        const { startDate: resolvedStartDate, endDate: resolvedEndDate } = this.resolveDateRange(dto.time_range, dto.from, dto.to);
+        startDate = resolvedStartDate;
+        endDate = resolvedEndDate;
+      }
+      // const { startDate, endDate } = this.resolveDateRange(dto.time_range, dto.from, dto.to);
+      const [entities, total] = await this.managerQuestionsRepository.findAll(dto, startDate, endDate);
+      const mapped = entities.map((entity) => {
+        const mapped = ManagerQuestionsMapper.toResponseRaw(entity, lang);
+        const totalImages = ImageHelper.extractImageUrls(mapped.content)
+        mapped.files = totalImages.length;
+        return mapped;
+      });
+      return new PaginationResponse<QuestionsResponseDto>(mapped, total, dto.page, dto.limit,);
+    } catch (error: any) {
+      console.error(error);
+      throw new BadRequestException(error.detail || error.message);
+    }
+  }
+
+  async getAllByUserId(userId: number, lang: LangEnum) {
+    try {
+      const entities = await this.managerQuestionsRepository.getAllByUserId(userId);
+      const mapped = entities.map((entity) => {
+        const mapped = ManagerQuestionsMapper.toResponseRaw(entity, lang);
+        const totalImages = ImageHelper.extractImageUrls(mapped.content)
+        mapped.files = totalImages.length;
+        return mapped;
+      });
+      return mapped;
+    } catch (error: any) {
+      console.error(error);
+      throw new BadRequestException(error.detail || error.message);
+    }
   }
 
   async getOne(id: number, lang: LangEnum) {
@@ -93,5 +136,42 @@ export class ManagerQuestionsService {
     }
     await GmailHelper.SendQuestionStatusChangeEmail(askedUserEmail, question.title, prevStatus, currentStatus)
     console.log("Sent gmails successfully")
+  }
+
+  private resolveDateRange(type: 'today' | 'week' | 'month' | 'custom', from?: Date, to?: Date) {
+    const endDate = to ?? new Date();
+    let startDate: Date;
+    let truncUnit: 'hour' | 'day' | 'month';
+    let labelFormat: string;
+
+    switch (type) {
+      case 'today':
+        startDate = new Date();
+        startDate.setHours(0, 0, 0, 0);
+        truncUnit = 'hour';
+        labelFormat = 'HH24:00';
+        break;
+      case 'week':
+        startDate = new Date();
+        startDate.setDate(startDate.getDate() - 7);
+        truncUnit = 'day';
+        labelFormat = 'Mon DD';
+        break;
+      case 'month':
+        startDate = new Date();
+        startDate.setMonth(startDate.getMonth() - 1);
+        truncUnit = 'day';
+        labelFormat = 'Mon DD';
+        break;
+      case 'custom':
+        if (!from || !to) throw new BadRequestException('from and to are required for custom type');
+        startDate = from;
+        const diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+        truncUnit = diffDays > 60 ? 'month' : 'day';
+        labelFormat = diffDays > 60 ? 'Mon YYYY' : 'Mon DD';
+        break;
+    }
+
+    return { startDate, endDate, truncUnit, labelFormat };
   }
 }

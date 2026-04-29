@@ -21,8 +21,6 @@ export class ManagerAnswersMapper {
     public static toUpdate(dto: AnswersUpdateDto, id: number) {
         const entity = new AnswersEntity({ id })
         if (dto.check_status) entity.check_status = dto.check_status
-        // if (dto.delete === true) entity.deleted_at = new Date()
-        // if (dto.delete === false) entity.deleted_at = null
         if (dto.reported_reason) entity.reported_reason = dto.reported_reason
         return entity
     }
@@ -31,7 +29,7 @@ export class ManagerAnswersMapper {
         const dto = new AnswersResponseDto()
         dto.id = entity.id
         dto.answered_by = UsersMapper.toResponseSimple(entity.answered_by)
-        dto.question = QuestionsMapper.toResponseSimple(entity.question, null)
+        dto.question = entity.question ? QuestionsMapper.toResponseSimple(entity.question, null) : null
         dto.content = entity.content
         dto.check_status = entity.check_status
         dto.reported_reason = entity.reported_reason

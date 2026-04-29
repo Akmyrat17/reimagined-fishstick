@@ -12,24 +12,16 @@ export class LoggingExceptionFilter implements ExceptionFilter {
 
   catch(exception: any, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse();
     const request = ctx.getRequest();
-    const status =
-      exception instanceof HttpException ? exception.getStatus() : 500;
+    const status = exception instanceof HttpException ? exception.getStatus() : 500;
+    const message = exception instanceof HttpException ? exception.getResponse() : exception.message;
 
-    const message =
-      exception instanceof HttpException
-        ? exception.getResponse()
-        : exception.message;
-
+    // ✅ Only log, never send a response
     this.logger.error(
-      `HTTP Status: ${status} Error Message: ${JSON.stringify(message)}`,
+      `${request.method} ${request.url} ${status} — ${JSON.stringify(message)}`,
     );
 
-    response.status(status).json({
-      statusCode: status,
-      timestamp: new Date().toISOString(),
-      path: request.url,
-    });
+    // ✅ Do NOT call response.status().json() here
+    // Let HttpExceptionFilter handle the actual response
   }
 }

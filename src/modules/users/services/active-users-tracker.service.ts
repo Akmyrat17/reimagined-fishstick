@@ -7,47 +7,37 @@ export class ActiveUsersTracker {
 
     constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) { }
 
-    // async ping(sessionId: string) {
-    //     const key = `active_users:${new Date().toISOString().slice(0, 16)}`; // "active_users:2026-03-25T14:30"
-    //     const existing: string[] = await this.cacheManager.get(key) || [];
-
-    //     if (!existing.includes(sessionId)) {
-    //         existing.push(sessionId);
-    //     }
-
-    //     await this.cacheManager.set(key, existing, 60 * 60 * 1000); // TTL 1 hour — Redis auto-deletes
-    // }
-
-    // async getActiveCount() {
-    //     const allSessions = new Set<string>();
-    //     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-
-    //     for (let i = 0; i <= 60; i++) {
-    //         const time = new Date(oneHourAgo.getTime() + i * 60 * 1000).toISOString().slice(0, 16);
-    //         const key = `active_users:${time}`;
-    //         const sessions: string[] = await this.cacheManager.get(key) || [];
-    //         sessions.forEach(id => allSessions.add(id));
-    //     }
-
-    //     return { users: allSessions.size };
-    // }
     async ping() {
-        const key = `active_users:${new Date().toISOString().slice(0, 16)}`; // per minute bucket
+        // Round down to nearest 10 minutes: 11:19 → "11:10", 11:25 → "11:20"
+        const now = new Date();
+        const minutes = Math.floor(now.getMinutes() / 10) * 10;
+        const key = `active_users:${now.getHours().toString().padStart(2, '0')}-${minutes.toString().padStart(2, '0')}`;
+
         const count: number = await this.cacheManager.get(key) || 0;
-        await this.cacheManager.set(key, count + 1, 2 * 60 * 60 * 1000); // TTL 2 hours
+        await this.cacheManager.set(key, count + 1, 60 * 60 * 1000); // TTL 1 hour
     }
 
     async getActiveCount() {
-        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        const now = new Date();
+        const buckets: { label: string; users: number }[] = [];
         let total = 0;
 
-        for (let i = 0; i <= 60; i++) {
-            const time = new Date(oneHourAgo.getTime() + i * 60 * 1000).toISOString().slice(0, 16);
-            const key = `active_users:${time}`;
+        // Go back 60 minutes, step by 10 minutes = 6 buckets + current = 7 buckets
+        for (let i = 60; i >= 0; i -= 10) {
+            const bucketTime = new Date(now.getTime() - i * 60 * 1000);
+            const hours = bucketTime.getHours().toString().padStart(2, '0');
+            const minutes = (Math.floor(bucketTime.getMinutes() / 10) * 10).toString().padStart(2, '0');
+
+            const key = `active_users:${hours}-${minutes}`;
             const count: number = await this.cacheManager.get(key) || 0;
+
             total += count;
+            buckets.push({
+                label: `${hours}:${minutes}`,
+                users: count,
+            });
         }
 
-        return { users: total };
+        return { total, buckets };
     }
 }

@@ -44,7 +44,7 @@ export class QuestionsService {
       }
       const entity = await this.questionsRepository.save(mapped);
       return QuestionsMapper.toResponseDetail(entity, lang);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       throw new NotFoundException('Question not found');
     }
@@ -55,7 +55,7 @@ export class QuestionsService {
       const [entities, total] = await this.questionsRepository.findAll(dto, userId);
       const items = entities.map(entity => QuestionsMapper.toResponseRaw(entity, userId || 0, lang));
       return new PaginationResponse<QuestionsResponseDto>(items, total, dto.page, dto.limit);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       return new PaginationResponse<QuestionsResponseDto>([], 0, dto.page, dto.limit);
     }
@@ -71,9 +71,14 @@ export class QuestionsService {
   }
 
   async getSimilarQuestions(questionId: number, limit: number, page: number, userId?: number, lang?: LangEnum) {
-    const [entities, total] = await this.questionsRepository.getSimilarQuestions(questionId, limit, page)
-    const mapped = entities.map(q => QuestionsMapper.toResponseRaw(q, userId, lang))
-    return new PaginationResponse(mapped, total, page, limit)
+    try {
+      const [entities, total] = await this.questionsRepository.getSimilarQuestions(questionId, limit, page)
+      const mapped = entities.map(q => QuestionsMapper.toResponseRaw(q, userId, lang))
+      return new PaginationResponse(mapped, total, page, limit)
+
+    } catch (error: any) {
+      console.log(error);
+    }
   }
 
   async remove(id: number, userId: number): Promise<{ success: boolean; message: string }> {

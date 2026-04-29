@@ -44,30 +44,26 @@ export class AuthService {
 
   async login(loginDto: LoginDto, allowedRoles?: RolesEnum[]) {
     const { email, password } = loginDto;
-    try {
-      const result = await this.usersRepository.getUserByEmail(email);
+    const result = await this.usersRepository.getUserByEmail(email);
+    if (!result)
+      throw new BadRequestException('User not found');
+    if (result.is_blocked === true) throw new BadRequestException('Current user blocked by admins')
+    // If allowedRoles is provided, check if user's role is allowed
+    if (allowedRoles && !allowedRoles.includes(result.role))
+      throw new ForbiddenException('You are not allowed to enter this');
 
-      if (!result)
-        throw new NotFoundException('User not found');
-      // If allowedRoles is provided, check if user's role is allowed
-      if (allowedRoles && !allowedRoles.includes(result.role))
-        throw new ForbiddenException('You are not allowed to enter this');
+    const isMatch = await bcrypt.compare(password, result.password);
+    if (!isMatch)
+      throw new UnauthorizedException('Email or password is incorrect');
 
-      const isMatch = await bcrypt.compare(password, result.password);
-      if (!isMatch)
-        throw new UnauthorizedException('Email or password is incorrect');
-
-      if (!result.is_verified) {
-        const text = await this.sendVerificationToken(result.email);
-        throw new UnauthorizedException(text);
-      }
-
-      const tokens = await this.generateTokens(result);
-      return { tokens, result };
-    } catch (error) {
-      console.log(error);
-      throw new BadRequestException(error.message || error.details);
+    if (!result.is_verified) {
+      const text = await this.sendVerificationToken(result.email);
+      throw new UnauthorizedException(text);
     }
+
+    const tokens = await this.generateTokens(result);
+    return { tokens, result };
+
   }
 
   async appLogin(dto: LoginDto) {
@@ -140,52 +136,44 @@ export class AuthService {
   }
 
   async sendResetVerification(email: string) {
-    try {
-      const user = await this.usersRepository.getUserByEmail(email)
-      if (!user) throw new NotFoundException('User not found')
+    const user = await this.usersRepository.getUserByEmail(email)
+    if (!user) throw new NotFoundException('User not found')
 
-      const existing = await this.cacheManager.get(`reset:pending:${email}`)
-      if (existing) return { message: 'Reset email already sent. Please check your inbox.' }
+    const existing = await this.cacheManager.get(`reset:pending:${email}`)
+    if (existing) return { message: 'Reset email already sent. Please check your inbox.' }
 
-      const token = uuidv4()
-      await this.cacheManager.set(`reset:${token}`, email, 1000 * 60 * 5) // 5 minutes
-      await this.cacheManager.set(`reset:pending:${email}`, token, 1000 * 60 * 5) // same TTL to prevent multiple requests
+    const token = uuidv4()
+    await this.cacheManager.set(`reset:${token}`, email, 1000 * 60 * 5) // 5 minutes
+    await this.cacheManager.set(`reset:pending:${email}`, token, 1000 * 60 * 5) // same TTL to prevent multiple requests
 
-      user.is_verified = false
-      await this.usersRepository.save(user)
+    user.is_verified = false
+    await this.usersRepository.save(user)
 
-      const resetUrl = `${this.appUrl}/auth/verify-reset/${token}`
-      await GmailHelper.SendPasswordResetEmail(email, resetUrl)
+    const resetUrl = `${this.appUrl}/auth/verify-reset/${token}`
+    await GmailHelper.SendPasswordResetEmail(email, resetUrl)
 
-      return { message: 'Reset verification email sent. Please check your inbox.' }
-    } catch (error) {
-      console.log(error)
-      throw new BadRequestException(error.message || error.details)
-    }
+    return { message: 'Reset verification email sent. Please check your inbox.' }
+
   }
 
   async verifyReset(token: string) {
-    try {
-      const email = await this.cacheManager.get<string>(`reset:${token}`)
-      if (!email) {
-        const loginUrl = this.configService.get('BASE_URL')
-        return `${loginUrl}/auth/login`
-      }
-
-      const user = await this.usersRepository.getUserByEmail(email)
-      if (!user) throw new UnauthorizedException('User not found')
-
-      user.is_verified = true
-      await this.usersRepository.save(user)
-
-      await this.cacheManager.del(`reset:pending:${email}`)
-
-      const frontendUrl = this.configService.get('BASE_URL')
-      return `${frontendUrl}/auth/reset-password?token=${token}`
-    } catch (error) {
-      console.log(error)
-      throw new BadRequestException(error.message || error.details)
+    const email = await this.cacheManager.get<string>(`reset:${token}`)
+    if (!email) {
+      const loginUrl = this.configService.get('BASE_URL')
+      return `${loginUrl}/auth/login`
     }
+
+    const user = await this.usersRepository.getUserByEmail(email)
+    if (!user) throw new UnauthorizedException('User not found')
+
+    user.is_verified = true
+    await this.usersRepository.save(user)
+
+    await this.cacheManager.del(`reset:pending:${email}`)
+
+    const frontendUrl = this.configService.get('BASE_URL')
+    return `${frontendUrl}/auth/reset-password?token=${token}`
+
   }
 
   // async checkResetVerification(email: string) {
@@ -195,33 +183,29 @@ export class AuthService {
 
   //     const pending = await this.cacheManager.get(`reset:pending:${email}`)
   //     return { verified: !pending }
-  //   } catch (error) {
+  //   } catch (error: any) {
   //     console.log(error)
   //     throw new BadRequestException(error.message || error.details)
   //   }
   // }
 
   async resetPassword(dto: ResetPasswordDto) {
-    try {
-      if (dto.password !== dto.confirm_password)
-        throw new BadRequestException('Passwords do not match')
+    if (dto.password !== dto.confirm_password)
+      throw new BadRequestException('Passwords do not match')
 
-      const email = await this.cacheManager.get<string>(`reset:${dto.token}`)
-      if (!email) throw new UnauthorizedException('Expired or invalid token')
+    const email = await this.cacheManager.get<string>(`reset:${dto.token}`)
+    if (!email) throw new UnauthorizedException('Expired or invalid token')
 
-      const user = await this.usersRepository.getUserByEmail(email)
-      if (!user) throw new NotFoundException('User not found')
+    const user = await this.usersRepository.getUserByEmail(email)
+    if (!user) throw new NotFoundException('User not found')
 
-      user.password = await bcrypt.hash(dto.password, 10)
-      await this.usersRepository.save(user)
+    user.password = await bcrypt.hash(dto.password, 10)
+    await this.usersRepository.save(user)
 
-      await this.cacheManager.del(`reset:${dto.token}`) // cleanup now
+    await this.cacheManager.del(`reset:${dto.token}`) // cleanup now
 
-      return { message: 'Password reset successfully.' }
-    } catch (error) {
-      console.log(error)
-      throw new BadRequestException(error.message || error.details)
-    }
+    return { message: 'Password reset successfully.' }
+
   }
 
   private async sendVerificationToken(email: string) {
@@ -236,7 +220,7 @@ export class AuthService {
       const verificationUrl = `${this.appUrl}/auth/verify-email/${verificationToken}`;
       await GmailHelper.SendVerificationEmail(email, verificationUrl);
       return { message: 'Verification email sent. Please check your inbox.' };
-    } catch (error) {
+    } catch (error: any) {
       throw new InternalServerErrorException(error.details || error.message);
     }
   }

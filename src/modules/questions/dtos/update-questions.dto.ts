@@ -1,8 +1,7 @@
 import { Transform } from 'class-transformer';
-import { ArrayMinSize, IsArray, IsDate, IsDateString, IsEnum, IsInt, IsNumber, IsOptional, IsString } from 'class-validator';
+import { ArrayMinSize, IsArray, IsDateString, IsEnum, IsInt, IsNumber, IsOptional, IsString, ValidateIf } from 'class-validator';
 import { QuestionsPriorityEnum } from 'src/common/enums';
 import { CheckStatusEnum } from 'src/common/enums/check-status.enum';
-import { IsToday } from 'src/common/validators/is-today';
 
 export class QuestionsUpdateDto {
   @IsOptional()
@@ -36,6 +35,8 @@ export class QuestionsUpdateDto {
   priority: QuestionsPriorityEnum;
 
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? null : value))
   @IsDateString({}, { message: 'special must be a valid ISO date (YYYY-MM-DD)' })
-  special: string;
+  @ValidateIf((o) => o.special !== null) // skip validation if null
+  special: string | null;
 }

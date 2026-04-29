@@ -1,5 +1,6 @@
 export enum CheckStatusEnum {
     NOT_CHECKED = 'not-checked',
     APPROVED = 'approved',
-    REPORTED = 'reported'
+    REPORTED = 'reported',
+    DELETED = 'deleted'
 }

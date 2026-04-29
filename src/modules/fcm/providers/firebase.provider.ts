@@ -26,7 +26,7 @@ export const firebaseProvider = {
 
             logger.log('✅ Firebase initialized successfully from cred-fcm.json');
             return initializeApp;
-        } catch (error) {
+        } catch (error: any) {
             logger.error('❌ Error while initializing firebase');
             logger.error(error.message);
 

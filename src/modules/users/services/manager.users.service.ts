@@ -11,12 +11,16 @@ import { ManagerUsersMapper } from '../mappers/manager.users.mapper';
 import { UsersQueryDto } from '../dtos/query-users.dto';
 import { PermissionsEntity } from 'src/modules/permissions/entities/permissions.entity';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { SendGmailNotificationDto } from '../dtos/send-gmail-notification.dto';
+import { GmailHelper } from 'src/common/utils/gmail.helper';
+import { ActiveUsersTracker } from './active-users-tracker.service';
 
 @Injectable()
 export class ManagerUsersService {
   constructor(
     private managerUsersRepository: ManagerUsersRepository,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly activeUsersTracker: ActiveUsersTracker
   ) { }
   async create(createUserDto: CreateUserDto) {
     try {
@@ -27,7 +31,7 @@ export class ManagerUsersService {
       const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
       const user = this.managerUsersRepository.create({ ...createUserDto, password: hashedPassword, role: createUserDto.role || RolesEnum.USER });
       return await user.save();
-    } catch (error) {
+    } catch (error: any) {
       throw new BadRequestException(error.message || error.details);
     }
   }
@@ -37,7 +41,7 @@ export class ManagerUsersService {
       const [data, total] = await this.managerUsersRepository.findAll(paginationDto);
       const mapped = data.map(user => ManagerUsersMapper.toResponseList(user, lang))
       return new PaginationResponse(mapped, total, paginationDto.page, paginationDto.limit);
-    } catch (error) {
+    } catch (error: any) {
       console.log(error);
       throw new BadRequestException(error.detail || error.message);
     }
@@ -99,10 +103,27 @@ export class ManagerUsersService {
     return user
   }
 
+  async sendNotificationToUser(dto: SendGmailNotificationDto) {
+    try {
+      const user = await this.managerUsersRepository.findOne({ where: { email: dto.email } });
+      if (!user) throw new NotFoundException('User with this email not found');
+
+      await GmailHelper.SendNotificationToSpecificEmail(dto.email, dto.title, dto.body)
+
+      return { message: 'Notification sent successfully' };
+    } catch (error: any) {
+      console.error(error);
+      throw new BadRequestException(error.message || 'Failed to send notification');
+    }
+  }
+
   async getTotal() {
     try {
-      return await this.managerUsersRepository.getTotal();
-    } catch (error) {
+      const total = await this.managerUsersRepository.getTotal();
+      const active = await this.activeUsersTracker.getActiveCount();
+      return { total, active };
+    }
+    catch (error: any) {
       console.error(error);
       throw new BadRequestException(error.detail || error.message);
     }

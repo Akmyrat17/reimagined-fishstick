@@ -34,7 +34,7 @@ export class BusinessProfilesService {
             const mapped = BusinessProfilesMapper.toResponse(businessProfiles, lang);
             return mapped
 
-        } catch (error) {
+        } catch (error: any) {
             console.log(error);
             throw new BadRequestException(error.detail || error.message);
         }

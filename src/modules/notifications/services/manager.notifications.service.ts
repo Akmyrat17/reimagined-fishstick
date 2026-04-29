@@ -37,7 +37,7 @@ export class ManagerNotificationsService {
                 return await this.managerNotificationsRepository.save(mapped)
             }
             throw new BadRequestException("Couldnt find the email or smth related to it")
-        } catch (error) {
+        } catch (error: any) {
             throw new BadRequestException(error.detail ?? error.message)
         }
     }
@@ -57,7 +57,7 @@ export class ManagerNotificationsService {
     //             },
     //             tokens,
     //         });
-    //     } catch (error) {
+    //     } catch (error: any) {
     //         throw new BadRequestException(error.detail || error.message);
     //     }
     // }

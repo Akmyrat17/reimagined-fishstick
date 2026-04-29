@@ -37,6 +37,7 @@ export class UsersMapper {
     const response = new UsersResponseDto()
     response.id = usersEntity.id
     response.role = usersEntity.role
+    response.email = usersEntity.email
     response.fullname = usersEntity.fullname
     return response
   }

@@ -21,6 +21,7 @@ import { PermissionsGuard } from 'src/common/guards/permissions.guard';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { UsersEntity } from 'src/modules/users/entities/users.entity';
 import { Permissions } from 'src/common/decorators/permissions.decorator';
+import { TimeRangeDto } from 'src/common/dto/time-range.dto';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller({ path: 'manager/questions' })
@@ -38,10 +39,16 @@ export class ManagerQuestionsController {
         return this.managerQuestionsService.getAll(paginationQuery, lang);
     }
 
+    @Get('user/:id')
+    @Permissions('questions.get-all')
+    async findAllByUser(@Param('id') userId: number, @Headers('lang') lang: LangEnum) {
+        return this.managerQuestionsService.getAllByUserId(userId, lang);
+    }
+
     @Get('total')
     @Permissions('questions.get-total')
-    async getTotal() {
-        return await this.managerQuestionsService.getTotalQuestions();
+    async getTotal(@Query() dto: TimeRangeDto) {
+        return await this.managerQuestionsService.getTotalQuestions(dto);
     }
 
     @Get(':id')

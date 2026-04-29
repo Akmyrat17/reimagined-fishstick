@@ -233,99 +233,109 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
         return [entities, count];
     }
 
-    async getSimilarQuestions(questionId: number, page: number = 1, limit: number = 10, currentUserId?: number): Promise<[any[], number]> {
-        // First, get the tags of the current question
+    async getSimilarQuestions(
+        questionId: number,
+        page: number = 1,
+        limit: number = 10,
+        currentUserId?: number,
+    ): Promise<[any[], number]> {
         const currentQuestion = await this.createQueryBuilder('q')
             .leftJoin('q.tags', 'tags')
             .select(['q.id', 'tags.id'])
             .where('q.id = :questionId', { questionId })
             .getOne();
 
-        if (!currentQuestion || !currentQuestion.tags || currentQuestion.tags.length === 0) {
+        if (!currentQuestion?.tags?.length) {
             return [[], 0];
         }
 
-        const tagIds = currentQuestion.tags.map(tag => tag.id);
+        const tagIds = currentQuestion.tags.map((t) => t.id);
 
-        // Build the main query
-        const query = this.createQueryBuilder('questions')
+        const base = this.createQueryBuilder('questions')
             .innerJoin('questions.asked_by', 'asked_by')
-            .leftJoin('questions.answers', 'answers')
-            .leftJoin('questions.seen', 'seen')
-            .leftJoin('votes', 'v', 'v.target_id = questions.id AND v.type = :type', { type: VotesTypeEnum.QUESTIONS })
             .innerJoin('questions.tags', 'question_tags')
-            .select(['questions.id', 'questions.priority', 'questions.special', 'questions.content', 'questions.title', 'questions.created_at', 'questions.reported_reason'])
+            .select([
+                'questions.id',
+                'questions.priority',
+                'questions.special',
+                'questions.content',
+                'questions.title',
+                'questions.created_at',
+                'questions.reported_reason',
+            ])
             .addSelect(['asked_by.id', 'asked_by.fullname'])
-            .addSelect('COUNT(DISTINCT answers.id)', 'answers_count')
-            .addSelect('COUNT(DISTINCT seen.id)', 'seen')
-            .addSelect('SUM(CASE WHEN v.vote = 1 THEN 1 ELSE 0 END)', 'upvotes_count')
-            .addSelect('SUM(CASE WHEN v.vote = 0 THEN 1 ELSE 0 END)', 'downvotes_count')
-            .addSelect('COUNT(v.id)', 'total_votes_count')
+            // ── all aggregates are now isolated subqueries ──────────────────
             .addSelect(
-                `COALESCE(
-                (
-                    SELECT json_agg(
-                        json_build_object(
-                            'id', t.id,
-                            'name', t.name
-                        )
-                    )
-                    FROM question_tags qt
-                    INNER JOIN tags t ON t.id = qt.tag_id
-                    WHERE qt.question_id = questions.id
-                ),
-                '[]'::json
-            )`,
-                'tags'
+                `(SELECT COUNT(*) FROM answers a WHERE a.question_id = questions.id)`,
+                'answers_count',
             )
-            // Count how many tags match (for ordering by relevance)
             .addSelect(
-                `COUNT(DISTINCT CASE WHEN question_tags.id IN (:...tagIds) THEN question_tags.id END)`,
-                'matching_tags_count'
-            );
+                `(SELECT COUNT(*) FROM questions_seen qs WHERE qs.question_id = questions.id)`,
+                'seen',
+            )
+            .addSelect(
+                `COALESCE((SELECT COUNT(*) FROM votes v WHERE v.target_id = questions.id AND v.type = '${VotesTypeEnum.QUESTIONS}' AND v.vote = 1), 0)`,
+                'upvotes_count',
+            )
+            .addSelect(
+                `COALESCE((SELECT COUNT(*) FROM votes v WHERE v.target_id = questions.id AND v.type = '${VotesTypeEnum.QUESTIONS}' AND v.vote = 0), 0)`,
+                'downvotes_count',
+            )
+            .addSelect(
+                `COALESCE((SELECT SUM(CASE WHEN v.vote = 1 THEN 1 WHEN v.vote = 0 THEN -1 ELSE 0 END) FROM votes v WHERE v.target_id = questions.id AND v.type = '${VotesTypeEnum.QUESTIONS}'), 0)`,
+                'total_votes_count',
+            )
+            .addSelect(
+                `COALESCE((SELECT json_agg(json_build_object('id', t.id, 'name', t.name)) FROM question_tags qt INNER JOIN tags t ON t.id = qt.tag_id WHERE qt.question_id = questions.id), '[]'::json)`,
+                'tags',
+            )
+            // relevance: how many of the current question's tags match
+            .addSelect(
+                `(SELECT COUNT(*) FROM question_tags qt WHERE qt.question_id = questions.id AND qt.tag_id IN (:...tagIds))`,
+                'matching_tags_count',
+            )
+            .where('questions.id != :questionId', { questionId })
+            .andWhere('question_tags.id IN (:...tagIds)', { tagIds })
+            .andWhere('questions.check_status = :value', { value: CheckStatusEnum.APPROVED })
+            .setParameter('tagIds', tagIds);
 
         if (currentUserId) {
-            query.addSelect(
-                `MAX(CASE WHEN v.user_id = ${currentUserId} THEN v.vote ELSE NULL END)`,
-                'current_user_vote'
+            base.addSelect(
+                `(SELECT v.vote FROM votes v
+              WHERE v.target_id = questions.id
+                AND v.type = '${VotesTypeEnum.QUESTIONS}'
+                AND v.user_id = ${currentUserId}
+              LIMIT 1)`,
+                'current_user_vote',
             );
         }
 
-        query.where('questions.id != :questionId', { questionId })
-            .andWhere('question_tags.id IN (:...tagIds)', { tagIds })
-            .andWhere('questions.check_status = :value', { value: CheckStatusEnum.APPROVED })
-
-        // Count query
         const countQuery = this.createQueryBuilder('questions')
             .innerJoin('questions.tags', 'question_tags')
             .select('COUNT(DISTINCT questions.id)', 'count')
             .where('questions.id != :questionId', { questionId })
             .andWhere('question_tags.id IN (:...tagIds)', { tagIds })
             .andWhere('questions.check_status = :value', { value: CheckStatusEnum.APPROVED })
+            .setParameter('tagIds', tagIds);
 
-        const countResult = await countQuery.getRawOne();
-        const count = parseInt(countResult.count);
+        const [countResult, entities] = await Promise.all([
+            countQuery.getRawOne(),
+            base
+                .groupBy('questions.id')
+                .addGroupBy('asked_by.id')
+                .orderBy('matching_tags_count', 'DESC')
+                .addOrderBy('questions.created_at', 'DESC')
+                .limit(limit)
+                .offset((page - 1) * limit)
+                .getRawMany(),
+        ]);
 
-        // Group and order by relevance (most matching tags first)
-        query.groupBy('questions.id')
-            .addGroupBy('asked_by.id')
-            .orderBy('matching_tags_count', 'DESC')
-            .addOrderBy('questions.created_at', 'DESC');
-
-        const entities = await query
-            .limit(limit)
-            .offset((page - 1) * limit)
-            .getRawMany();
-
-        return [entities, count];
+        return [entities, parseInt(countResult.count)];
     }
 
     async questionsByUserId(userId: number, page: number, limit: number, isApproved: boolean): Promise<[any[], number]> {
         const query = this.createQueryBuilder('questions')
             .innerJoin('questions.asked_by', 'asked_by')
-            .leftJoin('questions.answers', 'answers')
-            .leftJoin('questions.seen', 'seen')
-            .leftJoin('votes', 'v', 'v.target_id = questions.id AND v.type = :type', { type: VotesTypeEnum.QUESTIONS })
             .select([
                 'questions.id',
                 'questions.priority',
@@ -334,70 +344,67 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
                 'questions.title',
                 'questions.reported_reason',
                 'questions.created_at',
-                'questions.check_status'  // Include status so user knows
+                'questions.check_status',
             ])
             .addSelect(['asked_by.id', 'asked_by.fullname'])
-            .addSelect('COUNT(DISTINCT answers.id)', 'answers_count')
-            .addSelect('COUNT(DISTINCT seen.id)', 'seen')
-            .addSelect('SUM(CASE WHEN v.vote = 1 THEN 1 ELSE 0 END)', 'upvotes_count')
-            .addSelect('SUM(CASE WHEN v.vote = 0 THEN 1 ELSE 0 END)', 'downvotes_count')
-            .addSelect('COUNT(v.id)', 'total_votes_count')
             .addSelect(
-                `COALESCE(
-                (
-                    SELECT json_agg(
-                        json_build_object(
-                            'id', t.id,
-                            'name', t.name
-                        )
-                    )
-                    FROM question_tags qt
-                    INNER JOIN tags t ON t.id = qt.tag_id
-                    WHERE qt.question_id = questions.id
-                ),
-                '[]'::json
-            )`,
+                `(SELECT COUNT(*) FROM answers a WHERE a.question_id = questions.id)`,
+                'answers_count'
+            )
+            .addSelect(
+                `(SELECT COUNT(*) FROM questions_seen qs WHERE qs.question_id = questions.id)`,
+                'seen'
+            )
+            .addSelect(
+                `COALESCE((SELECT COUNT(*) FROM votes v WHERE v.target_id = questions.id AND v.type = '${VotesTypeEnum.QUESTIONS}' AND v.vote = 1), 0)`,
+                'upvotes_count'
+            )
+            .addSelect(
+                `COALESCE((SELECT COUNT(*) FROM votes v WHERE v.target_id = questions.id AND v.type = '${VotesTypeEnum.QUESTIONS}' AND v.vote = 0), 0)`,
+                'downvotes_count'
+            )
+            .addSelect(
+                `COALESCE((SELECT SUM(CASE WHEN v.vote = 1 THEN 1 WHEN v.vote = 0 THEN -1 ELSE 0 END) FROM votes v WHERE v.target_id = questions.id AND v.type = '${VotesTypeEnum.QUESTIONS}'), 0)`,
+                'total_votes_count'
+            )
+            .addSelect(
+                `COALESCE((SELECT json_agg(json_build_object('id', t.id, 'name', t.name)) FROM question_tags qt INNER JOIN tags t ON t.id = qt.tag_id WHERE qt.question_id = questions.id), '[]'::json)`,
                 'tags'
             )
             .addSelect(
-                `MAX(CASE WHEN v.user_id = ${userId} THEN v.vote ELSE NULL END)`,
+                `(SELECT v.vote FROM votes v WHERE v.target_id = questions.id AND v.type = '${VotesTypeEnum.QUESTIONS}' AND v.user_id = ${userId} LIMIT 1)`,
                 'current_user_vote'
-            );
+            )
+            .where('questions.asked_by_id = :userId', { userId });
 
-        // Only filter by user and soft delete
-        query.where('questions.asked_by_id = :userId', { userId })
-        // Count query
         const countQuery = this.createQueryBuilder('questions')
             .select('COUNT(questions.id)', 'count')
-            .where('questions.asked_by_id = :userId', { userId })
+            .where('questions.asked_by_id = :userId', { userId });
 
         if (isApproved) {
             query.andWhere('questions.check_status = :status', { status: CheckStatusEnum.APPROVED });
             countQuery.andWhere('questions.check_status = :status', { status: CheckStatusEnum.APPROVED });
         }
-        const countResult = await countQuery.getRawOne();
-        const count = parseInt(countResult.count);
-
-        // Group and order
+        query.andWhere('questions.check_status != :deletedStatus', { deletedStatus: CheckStatusEnum.DELETED });
+        countQuery.andWhere('questions.check_status != :deletedStatus', { deletedStatus: CheckStatusEnum.DELETED });
         query.groupBy('questions.id')
             .addGroupBy('asked_by.id')
             .orderBy('questions.created_at', 'DESC');
 
-        const entities = await query
-            .limit(limit)
-            .offset((page - 1) * limit)
-            .getRawMany();
+        const [countResult, entities] = await Promise.all([
+            countQuery.getRawOne(),
+            query.limit(limit).offset((page - 1) * limit).getRawMany(),
+        ]);
 
-        return [entities, count];
+        return [entities, parseInt(countResult.count)];
     }
 
     async getOne(id: number, userId?: number) {
-        try {
-            const userQuestionVoteSubquery = userId
-                ? `(SELECT v.vote FROM votes v WHERE v.target_id = q.id AND v.type = '${VotesTypeEnum.QUESTIONS}' AND v.user_id = ${userId} LIMIT 1)`
-                : 'NULL'
+        const userQuestionVoteSubquery = userId
+            ? `(SELECT v.vote FROM votes v WHERE v.target_id = q.id AND v.type = '${VotesTypeEnum.QUESTIONS}' AND v.user_id = ${userId} LIMIT 1)`
+            : 'NULL'
 
-            const query = `
+        const query = `
             SELECT 
                 q.id,
                 q.title,
@@ -462,16 +469,13 @@ export class QuestionsRepository extends Repository<QuestionsEntity> {
                 AND (q.check_status = $2 OR q.asked_by_id = $3)
             GROUP BY q.id, u.id, addr.id
         `
-            const params = userId
-                ? [id, CheckStatusEnum.APPROVED, userId]
-                : [id, CheckStatusEnum.APPROVED, null]
+        const params = userId
+            ? [id, CheckStatusEnum.APPROVED, userId]
+            : [id, CheckStatusEnum.APPROVED, null]
 
-            const rows = await this.query(query, params)
-            return rows[0]
-        } catch (error) {
-            console.log(error)
-            throw new BadRequestException(error.detail || error.message)
-        }
+        const rows = await this.query(query, params)
+        return rows[0]
+
     }
 
     async increaseSeen(userId: number, questionId: number) {

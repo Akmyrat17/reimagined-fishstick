@@ -29,5 +29,6 @@ export class QuestionsResponseDto {
     current_user_vote: number
     answers: AnswersResponseDto[]
     address: AddressesEntity
+    files: number
     current_user_answered: boolean
 }

@@ -10,14 +10,14 @@ export class ManagerUsersRepository extends Repository<UsersEntity> {
   }
 
   async findAll(paginationDto: UsersQueryDto): Promise<[UsersEntity[], number]> {
-    const { page, limit, keyword, is_verified } = paginationDto;
+    const { page, limit, keyword, is_verified, address_id } = paginationDto;
     const skip = (page - 1) * limit;
     const queryBuilder = this.createQueryBuilder('users')
       .leftJoin('users.address', 'address')
       // .leftJoin('users.business_profiles', 'business_profiles')
       .leftJoin('users.permissions', 'permissions')
       .leftJoin('users.profession', 'profession')
-      .select(['users.id', 'users.created_at', 'users.is_verified', 'users.role', 'users.email', 'users.fullname', 'users.age'])
+      .select(['users.id', 'users.created_at', 'users.is_verified', 'users.role', 'users.email', 'users.fullname', 'users.age', 'users.is_blocked', 'users.updated_at'])
       // .addSelect(['business_profiles.id'])
       .addSelect(['permissions.id', 'permissions.name', 'permissions.description'])
       .addSelect(['profession.id', 'profession.name'])
@@ -32,6 +32,7 @@ export class ManagerUsersRepository extends Repository<UsersEntity> {
       })
     );
     if (is_verified === true || is_verified === false) queryBuilder.andWhere("users.is_verified = :value", { value: is_verified })
+    if (address_id) queryBuilder.andWhere("address.id = :address_id", { address_id })
     const total = await queryBuilder.getCount();
     const data = await queryBuilder.orderBy('users.created_at', 'DESC').skip(skip).take(limit).getMany();
     return [data, total];

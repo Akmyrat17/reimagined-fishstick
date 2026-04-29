@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { ManagerTagsRepository } from "../repositories/manager.tags.repository";
 import { TagsCreateDto } from "../dtos/create-tags.dto";
 import { ManagerTagsMapper } from "../mappers/manager.tags.mapper";
@@ -31,11 +31,12 @@ export class ManagerTagsService {
 
     async delete(id: number) {
         try {
-            const entity = await this.managerTagsRepository.findOne({ where: { id } })
+            const entity = await this.managerTagsRepository.findOne({ where: { id }, relations: ['questions'] })
             if (!entity) throw new NotFoundException("Tag not found")
+            if (entity.questions && entity.questions.length > 0) throw new ForbiddenException("Tags with questions cannot be deleted")
             return await this.managerTagsRepository.remove(entity)
 
-        } catch (error) {
+        } catch (error: any) {
             console.log(error)
 
         }

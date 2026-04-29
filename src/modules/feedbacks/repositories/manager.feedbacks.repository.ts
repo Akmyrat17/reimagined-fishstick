@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Brackets, DataSource, Repository } from 'typeorm';
 import { FeedbacksEntity } from '../entities/feedbacks.entity';
 import { PaginationRequestDto } from 'src/common/dto/pagination.request.dto';
+import { FeedbacksQueryDto } from '../dtos/query-feedbacks.dto';
 
 @Injectable()
 export class ManagerFeedbacksRepository extends Repository<FeedbacksEntity> {
@@ -9,8 +10,8 @@ export class ManagerFeedbacksRepository extends Repository<FeedbacksEntity> {
     super(FeedbacksEntity, dataSource.createEntityManager());
   }
 
-  async getAll(dto: PaginationRequestDto): Promise<[FeedbacksEntity[], number]> {
-    const { page, limit, keyword } = dto;
+  async getAll(dto: FeedbacksQueryDto, startDate: Date, endDate: Date): Promise<[FeedbacksEntity[], number]> {
+    const { page, limit, keyword, time_range } = dto;
     const query = this.createQueryBuilder('feedbacks').select([
       'feedbacks.id',
       'feedbacks.is_read',
@@ -19,25 +20,28 @@ export class ManagerFeedbacksRepository extends Repository<FeedbacksEntity> {
       'feedbacks.created_at',
       'feedbacks.email',
     ]);
-    if (keyword)
+
+    if (keyword) {
       query.andWhere(
         new Brackets((qb) => {
-          qb.where(`feedbacks.content ILIKE :keyword`, {
-            keyword: `%${keyword}%`,
-          })
-            .orWhere(`feedbacks.email ILIKE :keyword`, {
-              keyword: `%${keyword}%`,
-            })
-            .orWhere(`feedbacks.reply ILIKE :keyword`, {
-              keyword: `%${keyword}%`,
-            });
+          qb.where(`feedbacks.content ILIKE :keyword`, { keyword: `%${keyword}%` })
+            .orWhere(`feedbacks.email ILIKE :keyword`, { keyword: `%${keyword}%` })
+            .orWhere(`feedbacks.reply ILIKE :keyword`, { keyword: `%${keyword}%` });
         }),
       );
+    }
+
+    if (time_range) {
+      query.andWhere('feedbacks.created_at BETWEEN :startDate AND :endDate', { startDate, endDate });
+    }
+
     const total = await query.getCount();
     const entities = await query
+      .orderBy('feedbacks.created_at', 'ASC')
       .take(limit)
       .offset((page - 1) * limit)
       .getMany();
+
     return [entities, total];
   }
 }

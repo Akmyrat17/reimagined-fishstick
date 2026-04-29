@@ -28,7 +28,7 @@ export class MainPageController {
             const famousUnansweredQuestions = await this.questionsService.getAll({ page: 1, limit: 10, sort: QuestionsSortEnum.VOTES_DESC, filters: QuestionsFilterEnum.HAS_NOT_ANSWERS }, userId);
             const famousAnsweredQuestions = await this.questionsService.getAll({ page: 1, limit: 10, sort: QuestionsSortEnum.VOTES_DESC, filters: QuestionsFilterEnum.HAS_ANSWERS }, userId);
             return { famousTags, lastHourQuestions, lastHourAnswers, lastHourVotes, famousUnansweredQuestions, famousAnsweredQuestions };
-        } catch (error) {
+        } catch (error: any) {
             console.log(error);
             throw new BadRequestException(error.detail ?? error.message)
         }

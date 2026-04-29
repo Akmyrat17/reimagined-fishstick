@@ -39,7 +39,7 @@ export class ImagesService {
                 await fs.access(filePath);
                 await fs.unlink(filePath);
                 results.push({ path: imageUrl, success: true });
-            } catch (error) {
+            } catch (error: any) {
                 console.error(`Failed to delete ${imageUrl}:`, error.message);
                 results.push({
                     path: imageUrl,

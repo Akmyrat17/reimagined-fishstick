@@ -28,7 +28,9 @@ export class ManagerQuestionsMapper {
             }
         }
         if (dto.priority) entity.priority = dto.priority
-        if (dto.special) entity.special = dto.special
+        if (dto.special !== undefined) {
+            entity.special = dto.special // null clears it, date sets it
+        }
         entity.title = dto.title ? dto.title : question.title
         entity.content = dto.content ? dto.content : question.content
         return entity
@@ -60,6 +62,26 @@ export class ManagerQuestionsMapper {
         dto.content = entity.content
         dto.asked_by = ManagerUsersMapper.toResponseList(entity.asked_by, lang)
         dto.special = entity.special
+        return dto
+    }
+    public static toResponseRaw(entity: any, lang: LangEnum) {
+        const dto = new QuestionsResponseDto()
+        dto.id = entity.questions_id
+        dto.priority = entity.questions_priority
+        dto.content = entity.questions_content
+        dto.special = entity.questions_special || entity.special || null
+        dto.title = entity.questions_title
+        dto.asked_by = ManagerUsersMapper.toResponseList(new UsersEntity({ id: entity.asked_by_id, fullname: entity.asked_by_fullname }), lang)
+        dto.tags = entity.tags && entity.tags.length > 0 ? entity.tags.map(t => TagsMapper.toResponse(t, lang)) : []
+        dto.seen = entity.seen
+        dto.answers_count = entity.answers_count
+        dto.total_votes_count = entity.total_votes_count
+        dto.created_at = entity.questions_created_at
+        dto.check_status = entity.questions_check_status
+        dto.reported_reason = entity.questions_reported_reason
+        dto.upvotes_count = entity.upvotes_count
+        dto.downvotes_count = entity.downvotes_count
+        dto.current_user_vote = entity.current_user_vote
         return dto
     }
 }

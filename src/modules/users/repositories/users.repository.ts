@@ -10,10 +10,9 @@ export class UsersRepository extends Repository<UsersEntity> {
   async getUserByEmail(email: string) {
     return await this.createQueryBuilder('users')
       .leftJoin('users.permissions', 'permissions')
-      .select(['users.id', 'users.email', 'users.password', 'users.is_verified', 'users.fullname', 'users.role'])
+      .select(['users.id', 'users.email', 'users.password', 'users.is_verified', 'users.fullname', 'users.role', 'users.is_blocked'])
       .addSelect(['permissions.id', 'permissions.name', 'permissions.description', 'permissions.type'])
       .where('users.email = :email', { email })
-      .andWhere('users.is_blocked = :is_blocked', { is_blocked: false })
       .getOne();
   }
 
@@ -53,7 +52,7 @@ export class UsersRepository extends Repository<UsersEntity> {
     try {
       const result = await this.query(sql, [tagIds, exceptUserEmail]);
       return result.map(row => row.email);
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Error fetching emails by tags:", error);
       return [];
     }
@@ -75,7 +74,7 @@ export class UsersRepository extends Repository<UsersEntity> {
     try {
       const result = await this.query(sql);
       return result.map(row => row.email);
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Error fetching emails by tags:", error);
       return [];
     }

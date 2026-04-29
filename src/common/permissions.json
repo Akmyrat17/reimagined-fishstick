@@ -44,6 +44,11 @@
             "name": "questions.update",
             "description": "to update questions",
             "type": "QUESTIONS"
+        },
+        {
+            "name": "answers.get-by-user",
+            "description": "to get answers by user id",
+            "type": "ANSWERS"
         }
     ]
 }

@@ -4,6 +4,7 @@ import { FeedbacksReplyDto } from '../dtos/reply-feedbacks.dto';
 import { PaginationRequestDto } from 'src/common/dto/pagination.request.dto';
 import { JwtAuthGuard } from 'src/modules/auth/jwt/jwt-auth.guard';
 import { AdminGuard } from 'src/common/guards/admin.guard';
+import { FeedbacksQueryDto } from '../dtos/query-feedbacks.dto';
 
 @Controller({ path: 'manager/feedbacks' })
 @UseGuards(JwtAuthGuard, AdminGuard)
@@ -18,7 +19,7 @@ export class ManagerFeedbacksController {
   }
 
   @Get()
-  async getAll(@Query() dto: PaginationRequestDto) {
+  async getAll(@Query() dto: FeedbacksQueryDto) {
     return await this.managerFeedbacksService.getAll(dto);
   }
 

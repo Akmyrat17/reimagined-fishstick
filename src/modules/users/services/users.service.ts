@@ -24,7 +24,7 @@ export class UsersService {
             if (!showFullEmail) user.email = GmailHelper.MaskEmail(user.email)
             const mapped = UsersMapper.responseProfile(user, lang)
             return mapped
-        } catch (error) {
+        } catch (error: any) {
             console.log(error);
             throw new BadRequestException(error.detail || error.message);
         }
@@ -41,7 +41,7 @@ export class UsersService {
                 mapped.password = await bcrypt.hash(dto.password, 10)
             }
             return await this.usersRepository.save(mapped)
-        } catch (error) {
+        } catch (error: any) {
             console.log(error);
             throw new BadRequestException(error.detail || error.message);
         }
@@ -56,7 +56,7 @@ export class UsersService {
             await this.usersRepository.remove(user)
             return { success: true, message: "user deleted successfully" }
 
-        } catch (error) {
+        } catch (error: any) {
             console.log(error)
         }
     }

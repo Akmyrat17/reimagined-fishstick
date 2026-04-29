@@ -43,6 +43,12 @@ export class ManagerAnswersController {
         return this.managerAnswersService.getTotal();
     }
 
+    @Get('user/:userId')
+    @Permissions('answers.get-by-user')
+    async getAnswersByUserId(@Param('userId', ParseIntPipe) userId: number) {
+        return this.managerAnswersService.getAnswersByUserId(userId);
+    }
+
     @Patch(':id')
     @Permissions('answers.update')
     async update(@Param('id', ParseIntPipe) id: number, @Body() dto: AnswersUpdateDto) {

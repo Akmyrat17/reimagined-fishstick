@@ -31,7 +31,6 @@ export class TagsRepository extends Repository<TagsEntity> {
         const result = await this.createQueryBuilder('tags')
             .leftJoin('tags.questions', 'questions')
             .leftJoin('tags.users', 'users')
-            .leftJoin('tags.business_profiles', 'business_profiles')
             .select([
                 'tags.id',
                 'tags.slug',
@@ -40,17 +39,12 @@ export class TagsRepository extends Repository<TagsEntity> {
             ])
             .addSelect('COUNT(DISTINCT questions.id)', 'questions_count')
             .addSelect('COUNT(DISTINCT users.id)', 'users_count')
-            // .addSelect('COUNT(DISTINCT business_profiles.id)', 'business_profiles_count')
-            //     .addSelect(`
-            //     (COUNT(DISTINCT questions.id) + 
-            //      COUNT(DISTINCT users.id) + 
-            //      COUNT(DISTINCT business_profiles.id))
-            // `, 'total_usage')
             .groupBy('tags.id')
             .addGroupBy(`tags.name`)
             .addGroupBy(`tags.desc`)
             .addGroupBy('tags.slug')
-            // .orderBy('total_usage', 'DESC')
+            .having('COUNT(DISTINCT questions.id) > 0')  // 👈 filter in query
+            .orderBy('questions_count', 'DESC')           // 👈 bonus: sort by popularity
             .limit(limit)
             .getRawAndEntities();
 
@@ -61,8 +55,6 @@ export class TagsRepository extends Repository<TagsEntity> {
             desc: tag.desc,
             questions_count: parseInt(result.raw[index].questions_count) || 0,
             users_count: parseInt(result.raw[index].users_count) || 0,
-            // business_profiles_count: parseInt(result.raw[index].business_profiles_count) || 0,
-            // total_usage: parseInt(result.raw[index].total_usage) || 0
         }));
     }
 
